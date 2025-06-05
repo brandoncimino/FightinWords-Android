@@ -30,6 +30,21 @@ class LetterTest {
                     .isEqualTo(kvp.value);
             }
     }
+
+    @Test
+    fun sortPhonologically() {
+        val expectedSorted = listOf(
+            "A",
+            "a",
+            "y",
+            "D",
+            "Đ"
+        )
+            .map { Letter(it) }
+
+        Assertions.assertThat(expectedSorted.shuffled().sortedWith(Letter.phonologicalComparator))
+            .isEqualTo(expectedSorted)
+    }
 }
 
 

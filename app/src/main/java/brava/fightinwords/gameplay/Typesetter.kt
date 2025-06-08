@@ -7,8 +7,7 @@ class Typesetter(
     /**
      * The original [Slug]s that the game was started with.
      */
-    val progenitorPool: List<Slug>,
-    val random: Random
+    val progenitorPool: List<Slug>
 ) {
     /**
      * The selectable letters that are being played with, in the order that they are visible to the player.
@@ -23,7 +22,7 @@ class Typesetter(
 
     var currentSorting: LetterSorting? = null;
 
-    fun shuffle() {
+    fun shuffle(random: Random) {
         currentPool = currentPool.shuffled(random)
         currentSorting = null;
     }

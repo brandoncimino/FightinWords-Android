@@ -10,4 +10,8 @@ class Slug(val letter: Char, val myTypesetter: Typesetter) {
         get() {
             return myTypesetter.galley.contains(this)
         }
+
+    override fun toString(): String {
+        return "🔲$letter"
+    }
 }

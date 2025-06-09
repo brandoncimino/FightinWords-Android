@@ -1,7 +1,5 @@
 package brava.fightinwords.gameplay
 
-import brava.fightinwords.Letter
-
 class Galley(
     val capacity: Int
 ) {
@@ -27,15 +25,20 @@ class Galley(
         }
 
         composingStick.add(slug);
+
+        println("Adding $slug produced: $composingStick")
     }
 
     fun remove(slug: Slug) {
         if(composingStick.contains(slug) == false) {
             throw NoSuchElementException("I don't contain $slug!")
         }
+
+        composingStick.remove(slug)
+        println("Removing $slug produced: $composingStick")
     }
 
-    fun submitAndClear(): List<Letter> {
+    fun submitAndClear(): List<Char> {
         val word = composingStick.map { it.letter }
         clear()
         return word
@@ -47,5 +50,13 @@ class Galley(
 
     fun backspace() : Slug? {
         return composingStick.removeLastOrNull()
+    }
+
+    fun contains(slug: Slug): Boolean {
+        return composingStick.contains(slug)
+    }
+
+    fun elementAtOrNull(index: Int): Slug? {
+        return composingStick.elementAtOrNull(index)
     }
 }

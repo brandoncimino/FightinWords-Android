@@ -1,10 +1,12 @@
 package brava.fightinwords.gameplay.scoring
 
 import brava.fightinwords.gameplay.KnownLanguage
+import brava.fightinwords.gameplay.data.Letter
+import brava.fightinwords.gameplay.data.Word
 
 class ScrabbleScorer : WordScorer {
-    private fun getLetterScore(char: Char, language: KnownLanguage): Int {
-        val lower = char.lowercaseChar()
+    private fun getLetterScore(letter: Letter, language: KnownLanguage): Int {
+        val lower = letter.character.lowercaseChar()
         return when (language) {
             KnownLanguage.English -> getEnglishLetterScore(lower)
             KnownLanguage.German -> getGermanLetterScore(lower)
@@ -56,7 +58,7 @@ class ScrabbleScorer : WordScorer {
         throw IllegalArgumentException("`$lower` is not a valid letter in $language Scrabble!")
     }
 
-    override fun getScore(word: String, language: KnownLanguage): Int {
+    override fun getScore(word: Word, language: KnownLanguage): Int {
         return word.sumOf { getLetterScore(it, language) }
     }
 

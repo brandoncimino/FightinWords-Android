@@ -1,7 +1,8 @@
 package brava.fightinwords.gameplay.scoring
 
 import brava.fightinwords.gameplay.KnownLanguage
+import brava.fightinwords.gameplay.data.Word
 
-interface WordScorer {
-    fun getScore(word: String, language: KnownLanguage): Int
+fun interface WordScorer {
+    fun getScore(word: Word, language: KnownLanguage): Int
 }

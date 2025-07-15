@@ -2,10 +2,12 @@ package brava.fightinwords
 
 import brava.fightinwords.gameplay.Phonology
 import brava.fightinwords.gameplay.Phonology.*
+import org.jetbrains.annotations.ApiStatus
 import java.text.Normalizer
 import java.util.*
 
-data class Letter(val raw: String, val locale: Locale = Locale.ROOT) : Comparable<Letter> {
+@ApiStatus.Experimental
+data class LetterExtreme(val raw: String, val locale: Locale = Locale.ROOT) : Comparable<LetterExtreme> {
     val decomposed: String
         get() {
             return Normalizer.normalize(raw, Normalizer.Form.NFD)
@@ -40,16 +42,18 @@ data class Letter(val raw: String, val locale: Locale = Locale.ROOT) : Comparabl
             return Phonology.Unknown;
         }
 
-    override fun compareTo(other: Letter): Int {
+    override fun compareTo(other: LetterExtreme): Int {
         return alphabeticalComparator.compare(this, other)
     }
 
     companion object {
-        val alphabeticalComparator: Comparator<Letter> = Comparator.comparing<Letter, String> { it.platonic }
+        val alphabeticalComparator: Comparator<LetterExtreme> =
+            Comparator.comparing<LetterExtreme, String> { it.platonic }
             .thenBy { it.decomposed }
             .thenBy { it.raw }
 
-        val phonologicalComparator: Comparator<Letter> = Comparator.comparing<Letter, Phonology> { it.phonology }
+        val phonologicalComparator: Comparator<LetterExtreme> =
+            Comparator.comparing<LetterExtreme, Phonology> { it.phonology }
             .then(alphabeticalComparator)
 
         private fun getEnglishPhonology(letter: Char): Phonology {

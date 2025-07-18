@@ -7,41 +7,50 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import brava.fightinwords.gameplay.KnownLanguage
+import brava.fightinwords.gameplay.Typesetter
+import brava.fightinwords.gameplay.Umpire
+import brava.fightinwords.gameplay.data.LetterPool
+import brava.fightinwords.gameplay.scoring.ScrabbleScorer
+import brava.fightinwords.gameplay.wordlookup.WordFileLookup
+import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers
+import brava.fightinwords.ui.GameScreen
 import brava.fightinwords.ui.theme.FightinWordsTheme
+import brava.fightinwords.ui.typesetter.UiSettings
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val naspaWordList = WordFileLookup(assets.open("en/NWL2023_words.txt"))
+
+        val progenitorPool = naspaWordList.findRandomWord(7, Random)
+            .map { LetterPool(it) }
+            .getOrThrow()
+
+        val umpire = Umpire(
+            wordPool = WordLookupHelpers.parseConstructibleWords(
+                assets.open("en/definitions.csv"),
+                KnownLanguage.English,
+                progenitorPool
+            ),
+            wordScorer = ScrabbleScorer()
+        )
+
         enableEdgeToEdge()
         setContent {
             FightinWordsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
+                Scaffold(modifier = Modifier.fillMaxSize()) {
+                    GameScreen(
+                        typesetter = Typesetter(progenitorPool),
+                        umpire = umpire,
+                        uiSettings = UiSettings(),
+                        modifier = Modifier.padding(it)
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FightinWordsTheme {
-        Greeting("Android")
     }
 }

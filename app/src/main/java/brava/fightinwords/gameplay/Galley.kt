@@ -1,9 +1,12 @@
 package brava.fightinwords.gameplay
 
-class Galley(
+import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.Word.Companion.toWord
+
+class Galley<T>(
     val capacity: Int
 ) {
-    private val composingStick : ArrayDeque<Slug> = ArrayDeque(capacity)
+    private val composingStick: ArrayDeque<T> = ArrayDeque(capacity)
 
     val isFull : Boolean get() {
         // 📎 You can do this in an "expression" style, using:
@@ -15,7 +18,8 @@ class Galley(
         return composingStick.size == capacity
     }
 
-    fun add(slug: Slug){
+    fun add(slug: T, log: (String) -> Unit = {}) {
+        val beforeSize = composingStick.size
         if(isFull) {
             throw IllegalStateException("Can't add $slug because I am already at my full capacity of ${capacity}!")
         }
@@ -26,10 +30,16 @@ class Galley(
 
         composingStick.add(slug);
 
-        println("Adding $slug produced: $composingStick")
+        log("Adding $slug produced: ${composingStick}")
+
+        assert(composingStick.size > beforeSize)
     }
 
-    fun remove(slug: Slug) {
+    fun get(index: Int): T {
+        return composingStick[index]
+    }
+
+    fun remove(slug: T) {
         if(composingStick.contains(slug) == false) {
             throw NoSuchElementException("I don't contain $slug!")
         }
@@ -38,25 +48,29 @@ class Galley(
         println("Removing $slug produced: $composingStick")
     }
 
-    fun submitAndClear(): List<Char> {
-        val word = composingStick.map { it.letter }
-        clear()
-        return word
-    }
-
     fun clear(){
         composingStick.clear()
     }
 
-    fun backspace() : Slug? {
+    fun backspace(): T? {
         return composingStick.removeLastOrNull()
     }
 
-    fun contains(slug: Slug): Boolean {
+    fun contains(slug: T): Boolean {
         return composingStick.contains(slug)
     }
 
-    fun elementAtOrNull(index: Int): Slug? {
+    fun elementAtOrNull(index: Int): T? {
         return composingStick.elementAtOrNull(index)
+    }
+
+    fun snapshot(): List<T> {
+        return composingStick.toList()
+    }
+
+    companion object {
+        fun Galley<Slug>.currentLetters(): Word {
+            return composingStick.map { it.letter }.toWord()
+        }
     }
 }

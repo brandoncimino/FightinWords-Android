@@ -5,7 +5,7 @@ import org.junit.Test
 import java.text.Normalizer
 
 
-class LetterTest {
+class LetterExtremeTest {
     @Test
     fun getPlatonic() {
         val scenarios = mapOf(
@@ -24,8 +24,8 @@ class LetterTest {
 
         Assertions.assertThat(scenarios)
             .allSatisfy { kvp ->
-                val letter = Letter(kvp.key)
-                Assertions.assertThat(letter.platonic)
+                val letterExtreme = LetterExtreme(kvp.key)
+                Assertions.assertThat(letterExtreme.platonic)
                     .describedAs("platonic")
                     .isEqualTo(kvp.value);
             }
@@ -40,9 +40,9 @@ class LetterTest {
             "D",
             "Đ"
         )
-            .map { Letter(it) }
+            .map { LetterExtreme(it) }
 
-        Assertions.assertThat(expectedSorted.shuffled().sortedWith(Letter.phonologicalComparator))
+        Assertions.assertThat(expectedSorted.shuffled().sortedWith(LetterExtreme.phonologicalComparator))
             .isEqualTo(expectedSorted)
     }
 }

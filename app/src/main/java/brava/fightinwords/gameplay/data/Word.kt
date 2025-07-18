@@ -28,6 +28,7 @@ data class Word(val letters: List<Letter>) : List<Letter> by letters {
         }
     }
 
+    @Suppress("DEPRECATION")
     @Deprecated("This is a mandatory override of a deprecated Java method")
     override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?> = super.toArray(generator)
 

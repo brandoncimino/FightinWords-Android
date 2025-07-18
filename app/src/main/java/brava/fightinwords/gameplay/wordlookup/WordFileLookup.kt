@@ -42,7 +42,7 @@ class WordFileLookup(wordStream: InputStream) : WordLookup {
     override fun findAllPossibleWords(letterPool: LetterPool, wordLength: Int): List<Word> {
         val buffer = CharArray(letterPool.size)
         return words.filter { word ->
-            letterPool.canConstructInternal(word, buffer)
+            letterPool.canConstructInternal(word.asSequence().map { it.character }, buffer)
         }
     }
 }

@@ -63,31 +63,41 @@ fun GameScreen(
                 .background(Color.LightGray, MaterialTheme.shapes.large)
         )
 
-        WordPoolView(
-            playableWords,
-            modifier = Modifier.weight(1f, fill = false)
-                .padding(horizontal = 20.dp)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        )
+        for (section in uiSettings.sectionOrder) {
+            when (section) {
+                UiSettings.UiSection.Scoreboard -> {
+                    WordPoolView(
+                        playableWords,
+                        modifier = Modifier.weight(1f, fill = false)
+                            .padding(horizontal = 20.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    )
+                }
 
-        DefinitionBox(
-            focusedDefinition,
-            modifier = Modifier
-                .sizeIn(minHeight = 120.dp)
-                .fillMaxWidth()
-                .padding(10.dp)
-                .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.medium
-                )
-        )
+                UiSettings.UiSection.Definition -> {
+                    DefinitionBox(
+                        focusedDefinition,
+                        modifier = Modifier
+                            .sizeIn(minHeight = 120.dp)
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                    )
+                }
 
-        TypesetterView(
-            typesetterState,
-            typesetterButtons,
-            uiSettings,
-        )
+                UiSettings.UiSection.Typesetter -> {
+                    TypesetterView(
+                        typesetterState,
+                        typesetterButtons,
+                        uiSettings,
+                    )
+                }
+            }
+        }
     }
 }
 

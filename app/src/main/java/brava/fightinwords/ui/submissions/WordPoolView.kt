@@ -18,22 +18,23 @@ fun WordPoolView(
     playableWords: List<DefinedWordState>,
     modifier: Modifier = Modifier,
     includeUnsubmitted: Boolean = true,
-    paddedWordLength: Int? = null,
+    padToLongestWord: Boolean = false,
     minimumIntraColumnPadding: Float = 1f,
     preferredColumns: Int = 3,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceBetween
 ) {
+    check(playableWords.isNotEmpty(), { "Can't render a word pool without any words!" })
 
     BoxWithConstraints(
         modifier = modifier
     ) {
         val maxHeight = this.maxHeight
-        val longestWord = max(paddedWordLength ?: Int.MIN_VALUE, playableWords.maxOf { it.word.size })
+        val longestWordLength = playableWords.maxOf { it.word.size }
 
         val wordPoolSizes = calculateWordPoolSizes(
             maxWidth,
             maxHeight,
-            longestWord,
+            longestWordLength,
             preferredColumnCount = preferredColumns,
             minimumIntraColumnPadding = minimumIntraColumnPadding,
             wordCount = playableWords.size,
@@ -49,12 +50,33 @@ fun WordPoolView(
                     WordPoolWord(
                         definedWordState = state,
                         letterPersonalSpace = wordPoolSizes.letterPersonalSpace,
-                        paddedWordLength = longestWord,
+                        paddedWordLength = when (padToLongestWord) {
+                            true -> longestWordLength
+                            false -> null
+                        },
                     )
                 }
             }
         }
     }
+}
+
+sealed interface WordPadding {
+    object None : WordPadding
+    object MatchLongestWord : WordPadding
+    data class MinimumLetterCount(val minimumLetters: Int) : WordPadding
+}
+
+fun maxNotNull(a: Int?, b: Int?): Int? {
+    if (a == null) {
+        return b
+    }
+
+    if (b == null) {
+        return a
+    }
+
+    return max(a, b)
 }
 
 fun calculateWordPoolSizes(

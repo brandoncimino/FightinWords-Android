@@ -35,7 +35,7 @@ class Galley<T>(
         assert(composingStick.size > beforeSize)
     }
 
-    fun get(index: Int): T {
+    operator fun get(index: Int): T {
         return composingStick[index]
     }
 

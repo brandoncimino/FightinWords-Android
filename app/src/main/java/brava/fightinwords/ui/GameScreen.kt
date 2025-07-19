@@ -14,7 +14,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.Typesetter
-import brava.fightinwords.gameplay.Umpire
 import brava.fightinwords.gameplay.Unplayed
 import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.LetterPool
@@ -22,27 +21,6 @@ import brava.fightinwords.ui.submissions.DefinitionBox
 import brava.fightinwords.ui.submissions.WordPoolView
 import brava.fightinwords.ui.typesetter.*
 
-@Composable
-fun GameScreen(
-    typesetter: Typesetter,
-    umpire: Umpire,
-    uiSettings: UiSettings,
-    modifier: Modifier = Modifier,
-) {
-    GameScreen(
-        typesetterState = typesetter.snapshot(),
-        typesetterButtons = typesetter.buttons(),
-        focusedDefinition = null,
-        playableWords = umpire.snapshot().flatMap {
-            when (it) {
-                is DefinedWordState -> sequenceOf(it)
-                else -> emptySequence()
-            }
-        },
-        uiSettings = uiSettings,
-        modifier = modifier,
-    )
-}
 
 @Composable
 fun GameScreen(

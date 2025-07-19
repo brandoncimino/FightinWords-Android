@@ -17,6 +17,10 @@ class Umpire(
     }
         .toMutableMap()
 
+    init {
+        println("Created ${this.javaClass.simpleName} with a pool of ${playableWords.size} playable words")
+    }
+
     fun submitWord(word: Word): SubmissionResult {
         val previousState = playableWords[word]
 

@@ -55,7 +55,12 @@ class Typesetter(
         sort(LetterSorting.Alphabetical, descending)
     }
 
+    fun toggleGalleyIndex(galleyIndex: Int) {
+        toggle(galley[galleyIndex])
+    }
+
     fun toggle(slug: Slug) {
+        println("Toggling $slug")
         if (galley.contains(slug)) {
             deselect(slug)
             assert(galley.contains(slug) == false)
@@ -65,6 +70,7 @@ class Typesetter(
         }
     }
 
+    fun toggleIndex(slugIndex: Int) = toggle(slugIndex)
     fun toggle(slugIndex: Int) {
         toggle(currentPool[slugIndex])
     }

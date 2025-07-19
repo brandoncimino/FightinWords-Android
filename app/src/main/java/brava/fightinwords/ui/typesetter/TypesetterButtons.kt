@@ -11,6 +11,15 @@ class TypesetterButtons(
     val onGalleyButtonClick: (index: Int) -> Unit,
     val onSubmit: () -> Unit
 ) {
+    fun then(action: () -> Unit): TypesetterButtons {
+        return TypesetterButtons(
+            onSortButtonClick = { onSortButtonClick(it); action() },
+            onLetterButtonClick = { onLetterButtonClick(it); action() },
+            onGalleyButtonClick = { onGalleyButtonClick(it); action() },
+            onSubmit = { onSubmit(); action() }
+        )
+    }
+
     companion object {
         fun clickSortButton(sortButton: SortButton, typesetter: Typesetter) {
             when (sortButton) {

@@ -7,7 +7,8 @@ data class UiSettings(
     val maxButtonsPerRow: Int? = null,
     val letterButtonCase: LetterCase = LetterCase.Uppercase,
     val rejectionDisplay: RejectionDisplay = RejectionDisplay.Include,
-    val sectionOrder: Set<UiSection> = UiSection.entries.toSet()
+    val sectionOrder: Set<UiSection> = UiSection.entries.toSet(),
+    val bonusWordVisibility: BonusWordVisibility = BonusWordVisibility.HiddenUntilPlayed
 ) {
     companion object {
         const val ComfortableButtonsPerRow: Int = 6
@@ -22,6 +23,12 @@ data class UiSettings(
         Scoreboard,
         Typesetter,
         Definition
+    }
+
+    enum class BonusWordVisibility {
+        HiddenUntilPlayed,
+        Distinguished,
+        Indistinguishable
     }
 }
 

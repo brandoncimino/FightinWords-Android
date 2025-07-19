@@ -9,6 +9,8 @@ import kotlin.random.Random
 class WordFileLookup(wordStream: InputStream) : WordLookup {
     private val words: HashSet<Word> = HashSet()
 
+    val size: Int = words.size
+
     private val wordLengthCounts: HashMap<Int, Int> = HashMap()
 
     init {
@@ -19,6 +21,8 @@ class WordFileLookup(wordStream: InputStream) : WordLookup {
             // 📎 `?:` is equivalent to C#'s `??`
             wordLengthCounts.compute(it.length) { _, count -> (count ?: 0) + 1 }
         }
+
+        println("Loaded ${words.size} words!")
     }
 
     override fun isWord(word: Word): Boolean = words.contains(word)

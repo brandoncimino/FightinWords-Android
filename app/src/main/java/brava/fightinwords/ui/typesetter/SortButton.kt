@@ -1,7 +1,9 @@
 package brava.fightinwords.ui.typesetter
 
-enum class SortButton {
-    Shuffled,
-    Alphabetical,
-    Phonological
+enum class SortButton(
+    val label: String
+) {
+    Shuffled("🎲"),
+    Alphabetical("A→Z"),
+    Phonological("Vowels")
 }

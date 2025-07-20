@@ -22,7 +22,7 @@ fun TypesetterView(
     uiSettings: UiSettings,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints {
+    BoxWithConstraints(modifier) {
         val actualPersonalSpace: Dp
         val comfortablePersonalSpace = 360.dp / UiSettings.ComfortableButtonsPerRow
 
@@ -47,7 +47,7 @@ fun TypesetterView(
                 typesetterButtons.onLetterButtonClick
             )
 
-            SortButtons(
+            TypesetterButtonsView(
                 typesetterButtons.onSortButtonClick,
                 typesetterButtons.onSubmit
             )
@@ -69,7 +69,7 @@ fun TypesetterViewPreview(
 }
 
 @Composable
-fun SortButtons(
+fun TypesetterButtonsView(
     onSortButtonClick: (SortButton) -> Unit,
     onSubmit: () -> Unit,
     fontSize: TextUnit = 30.sp,
@@ -78,32 +78,41 @@ fun SortButtons(
     Column(
         horizontalAlignment = CenterHorizontally,
     ) {
+        SubmitButton(fontSize, onSubmit, modifier)
+
         Row(
             horizontalArrangement = Arrangement.Center,
         ) {
-            Button(
-                content = { Text("🎲", fontSize = fontSize) },
-                onClick = { onSortButtonClick(SortButton.Shuffled) },
-                modifier = modifier
-            )
-
-            Button(
-                content = { Text("abc", fontSize = fontSize) },
-                onClick = { onSortButtonClick(SortButton.Alphabetical) },
-                modifier = Modifier
-            )
-
-            Button(
-                content = { Text("aeiou", fontSize = fontSize) },
-                onClick = { onSortButtonClick(SortButton.Phonological) },
-                modifier = Modifier
-            )
-
-            Button(
-                content = { Text("⏎", fontSize = fontSize) },
-                onClick = onSubmit,
-                modifier = Modifier
-            )
+            SortButton.entries.forEach {
+                SortButton(it, onSortButtonClick, modifier, fontSize)
+            }
         }
     }
+}
+
+@Composable
+fun SortButton(
+    sortButton: SortButton,
+    onSortButtonClick: (SortButton) -> Unit,
+    modifier: Modifier = Modifier,
+    fontSize: TextUnit = 30.sp,
+) {
+    Button(
+        content = { Text(sortButton.label, fontSize = fontSize) },
+        onClick = { onSortButtonClick(sortButton) },
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun SubmitButton(
+    fontSize: TextUnit,
+    onSubmit: () -> Unit,
+    modifier: Modifier
+) {
+    Button(
+        content = { Text("Submit ⏎", fontSize = fontSize) },
+        onClick = onSubmit,
+        modifier = modifier
+    )
 }

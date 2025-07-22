@@ -7,12 +7,7 @@ import brava.fightinwords.gameplay.data.Letter
  *
  * > It might be more accurate to call this a [sort](https://en.wikipedia.org/wiki/Sort_(typesetting)), but that is needlessly confusing in the context of programming.
  */
-class Slug(val letter: Letter, val myTypesetter: Typesetter) {
-    val isSlotted: Boolean
-        get() {
-            return myTypesetter.galley.contains(this)
-        }
-
+class Slug(val letter: Letter) {
     override fun toString(): String {
         return "🔲$letter"
     }

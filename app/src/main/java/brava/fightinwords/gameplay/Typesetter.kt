@@ -1,28 +1,51 @@
 package brava.fightinwords.gameplay
 
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
+import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word
+import kotlinx.serialization.Serializable
 import java.util.Comparator.comparing
 import kotlin.random.Random
 
-class Typesetter(
+class Typesetter(slugs: List<Slug>) {
     /**
-     * The original [Slug]s that the game was started with.
+     * @param progenitorPool The original [Slug]s that the game was started with.
      */
-    val progenitorPool: LetterPool
-) {
+    constructor(progenitorPool: LetterPool) : this(
+        progenitorPool.map { Slug(it) }
+    )
+
     /**
      * The selectable letters that are being played with, in the order that they are visible to the player.
      */
-    var currentPool: List<Slug> = progenitorPool
-        .map { Slug(it, this) }
+    var currentPool: List<Slug> = slugs
         private set
+
+    @Serializable
+    data class SerializableSlugState(
+        val letter: Letter,
+        val galleyIndex: Int?
+    )
+
+    /**
+     * Constructs a [Typesetter] that is already "in-progress".
+     */
+    constructor(
+        slugStates: List<SerializableSlugState>
+    ) : this(
+        slugStates.map { Slug(it.letter) }
+    ) {
+        val indexed = slugStates.withIndex()
+        indexed.filter { (index, state) -> state.galleyIndex != null }
+            .sortedBy { (index, state) -> state.galleyIndex }
+            .forEach { (index, state) -> galley.add(currentPool[index]) }
+    }
 
     /**
      * The selected letters waiting to be submitted.
      */
-    val galley: Galley<Slug> = Galley<Slug>(progenitorPool.size)
+    val galley: Galley<Slug> = Galley<Slug>(slugs.size)
 
     data class SortState(val letterSorting: LetterSorting, val isDescending: Boolean)
 

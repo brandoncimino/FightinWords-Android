@@ -24,7 +24,7 @@ fun TypesetterView(
 ) {
     BoxWithConstraints(modifier) {
         val actualPersonalSpace: Dp
-        val comfortablePersonalSpace = 360.dp / UiSettings.ComfortableButtonsPerRow
+        val comfortablePersonalSpace = 360.dp / uiSettings.comfortableButtonsPerRow
 
         if (uiSettings.maxButtonsPerRow == null) {
             actualPersonalSpace = comfortablePersonalSpace

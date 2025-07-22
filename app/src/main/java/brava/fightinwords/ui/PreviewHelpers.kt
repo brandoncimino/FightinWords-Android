@@ -28,50 +28,12 @@ object PreviewHelpers {
         false
     )
 
-//    fun createWordRatings(wordLengths: IntRange = 3..6, wordsPerLength: Int = 3): List<Umpire.WordRating> {
-//        return wordLengths.flatMap { wordLength ->
-//            (0..wordsPerLength).map {
-//                createWordRating(
-//                    (0..wordLength).joinToString("") {
-//                        ('a' + it).toString()
-//                    }
-////                    "a".repeat(wordLength)
-//                    ,
-//                    when (it) {
-//                        0 -> null
-//                        else -> 3.0.pow(it * 2).toInt()
-//                    }
-//                )
-//            }
-//        }
-//    }
-
-//    fun createWordRating(
-//        word: String,
-//        points: Int?,
-//        definition: WordDefinition = deez
-//    ) : Umpire.WordRating {
-//        return Umpire.WordRating(
-//            word.toWord(),
-//            score = when(points){
-//                null -> null
-//                else -> Umpire.WordScore(
-//                    word.toWord(),
-//                    points,
-//                    WordDefinition(
-//                        word.toWord(),
-//                        definition.language,
-//                        definition.partOfSpeech,
-//                        definition.definition
-//                    )
-//                )
-//            }
-//        )
-//    }
+    val longDefinition =
+        deez.copy(definition = "This is a really long version of the original definition for 'deez', which was not quite this long, but now is longer than it once was.")
 
     @Composable
     fun Log(
-        vararg lines: Any?,
+        lines: Iterable<Any?>,
         verticalArrangement: Arrangement.Vertical = Arrangement.Bottom,
         nullPlaceholder: String = "⛔"
     ) {
@@ -93,11 +55,22 @@ object PreviewHelpers {
             }
         }
     }
+
+    @Composable
+    fun Log(
+        vararg lines: Any?,
+        verticalArrangement: Arrangement.Vertical = Arrangement.Bottom,
+        nullPlaceholder: String = "⛔"
+    ) {
+        Log(lines.asIterable(), verticalArrangement, nullPlaceholder)
+    }
 }
 
 internal fun obtuseSubmissions(padWordsToLength: Int? = null): List<DefinedWordState> {
     return sequenceOf(
 //        "obtuse",
+        "bet",
+        "bot",
         "beot",
         "best",
         "bets",

@@ -10,41 +10,48 @@ import brava.fightinwords.gameplay.wordlookup.WordDefinition
 class Umpire(
     wordPool: Sequence<WordDefinition>,
     val wordScorer: WordScorer,
-    val language: KnownLanguage = KnownLanguage.English
+    val language: KnownLanguage = KnownLanguage.English,
+    val unsubmittedWordVisibility: UnsubmittedWordVisibility = UnsubmittedWordVisibility.Standard
 ) {
-    private val playableWords: MutableMap<Word, WordState> = wordPool.associate {
+    private val wordStates: MutableMap<Word, WordState> = wordPool
+        .sortedBy { it.word.length }
+        .associate {
         it.word to Unplayed(it)
     }
         .toMutableMap()
 
     init {
-        println("Created ${this.javaClass.simpleName} with a pool of ${playableWords.size} playable words")
+        println("Created ${this.javaClass.simpleName} with a pool of ${wordStates.size} playable words (${wordStates.count { (it.value as DefinedWordState).wordDefinition.isNaspaWord }} NASPA standard)")
     }
 
     fun submitWord(word: Word): SubmissionResult {
-        val previousState = playableWords[word]
+        println("Submitting the word: $word")
+        val previousState = wordStates[word]
 
-        return when (previousState) {
+        val result = when (previousState) {
             is Accepted -> SubmissionResult(Freshness.Stale, previousState)
             is Unplayed -> acceptFreshWord(previousState)
             is Rejected -> SubmissionResult(Freshness.Stale, previousState)
             null -> rejectFreshWord(word)
         }
+
+        println("Ruled the submission: $result")
+        return result
     }
 
-    fun getCurrentState(word: Word): WordState? = playableWords[word]
+    fun getCurrentState(word: Word): WordState? = wordStates[word]
 
     private fun acceptFreshWord(unplayedWord: Unplayed): SubmissionResult {
-        check(playableWords[unplayedWord.word] == unplayedWord)
+        check(wordStates[unplayedWord.word] == unplayedWord)
         val accepted = Accepted(unplayedWord.wordDefinition, wordScorer.getScore(unplayedWord.word, language))
-        playableWords[unplayedWord.word] = accepted
+        wordStates[unplayedWord.word] = accepted
         return SubmissionResult(Freshness.Fresh, accepted)
     }
 
     private fun rejectFreshWord(word: Word): SubmissionResult {
-        check(playableWords.contains(word) == false)
+        check(wordStates.contains(word) == false)
         val rejected = Rejected(word)
-        playableWords[word] = rejected
+        wordStates[word] = rejected
         return SubmissionResult(Freshness.Fresh, rejected)
     }
 
@@ -54,8 +61,35 @@ class Umpire(
     )
 
     fun snapshot(): List<WordState> {
-        return playableWords.values.toList()
+        return wordStates.values.toList()
     }
+
+    private fun DefinedWordState.isVisible(): Boolean {
+        return when (this) {
+            is Accepted -> true
+            else ->
+                when (unsubmittedWordVisibility) {
+                    UnsubmittedWordVisibility.None -> false
+                    UnsubmittedWordVisibility.Standard -> this.wordDefinition.isNaspaWord
+                    UnsubmittedWordVisibility.All -> true
+                }
+        }
+    }
+
+    fun visibleWords(): List<DefinedWordState> {
+        val visibles = wordStates.values
+            .filterIsInstance<DefinedWordState>()
+            .filter { it.isVisible() }
+
+        println("Returning ${visibles.size} visible words")
+        return visibles
+    }
+}
+
+enum class UnsubmittedWordVisibility {
+    None,
+    Standard,
+    All
 }
 
 enum class Freshness {

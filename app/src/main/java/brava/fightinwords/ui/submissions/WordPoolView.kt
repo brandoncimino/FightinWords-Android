@@ -1,43 +1,48 @@
 package brava.fightinwords.ui.submissions
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.Accepted
 import brava.fightinwords.gameplay.DefinedWordState
+import brava.fightinwords.ui.JetpackBoosters
+import brava.fightinwords.ui.PaddingRatio
 import brava.fightinwords.ui.obtuseSubmissions
 import brava.fightinwords.ui.typesetter.LetterTile
 import brava.fightinwords.ui.typesetter.LetterTileFlavor
 import kotlin.math.floor
-import kotlin.math.max
 
 @Composable
 fun WordPoolView(
-    playableWords: List<DefinedWordState>,
+    visibleWords: List<DefinedWordState>,
     modifier: Modifier = Modifier,
-    includeUnsubmitted: Boolean = true,
     padToLongestWord: Boolean = false,
-    minimumIntraColumnPadding: Float = 1f,
-    preferredColumns: Int = 3,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceBetween
+    wordPadding: PaddingRatio = PaddingRatio(horizontal = .5f, vertical = .2f),
+    maxLetterPersonalSpace: Dp = 55.dp,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceBetween,
+    onWordClicked: (DefinedWordState) -> Unit = {}
 ) {
-    check(playableWords.isNotEmpty(), { "Can't render a word pool without any words!" })
+    check(visibleWords.isNotEmpty(), { "Can't render a word pool without any words!" })
 
     BoxWithConstraints(
         modifier = modifier
     ) {
-        val maxHeight = this.maxHeight
-        val longestWordLength = playableWords.maxOf { it.word.size }
+        val availableSpace = DpSize(this.maxWidth, this.maxHeight)
+        val paddedWordLength = when (padToLongestWord) {
+            true -> visibleWords.maxOf { it.word.length }
+            false -> null
+        }
 
-        val wordPoolSizes = calculateWordPoolSizes(
-            maxWidth,
-            maxHeight,
-            longestWordLength,
-            preferredColumnCount = preferredColumns,
-            minimumIntraColumnPadding = minimumIntraColumnPadding,
-            wordCount = playableWords.size,
+        val letterPersonalSpace = shrinkLettersToFit(
+            maxLetterPersonalSpace,
+            visibleWords.asSequence().map { paddedWordLength ?: it.word.length },
+            PaddingRatio(horizontal = .5f, vertical = .2f),
+            availableSpace = availableSpace
         )
 
         FlowColumn(
@@ -45,108 +50,35 @@ fun WordPoolView(
             modifier = Modifier
                 .fillMaxWidth(),
         ) {
-            for (state in playableWords) {
-                if (state is Accepted || includeUnsubmitted) {
+            for (state in visibleWords) {
                     WordPoolWord(
                         definedWordState = state,
-                        letterPersonalSpace = wordPoolSizes.letterPersonalSpace,
-                        paddedWordLength = when (padToLongestWord) {
-                            true -> longestWordLength
-                            false -> null
-                        },
+                        letterPersonalSpace = letterPersonalSpace,
+                        wordPadding = wordPadding,
+                        onClick = onWordClicked
                     )
-                }
             }
         }
     }
-}
-
-sealed interface WordPadding {
-    object None : WordPadding
-    object MatchLongestWord : WordPadding
-    data class MinimumLetterCount(val minimumLetters: Int) : WordPadding
-}
-
-fun maxNotNull(a: Int?, b: Int?): Int? {
-    if (a == null) {
-        return b
-    }
-
-    if (b == null) {
-        return a
-    }
-
-    return max(a, b)
-}
-
-fun calculateWordPoolSizes(
-    maxWidth: Dp,
-    maxHeight: Dp,
-    longestWordLength: Int,
-    minimumIntraColumnPadding: Float,
-    wordCount: Int,
-    preferredColumnCount: Int = 3,
-    maxColumnCount: Int = Int.MAX_VALUE,
-): WordPoolSizes {
-    for (colCount in preferredColumnCount..maxColumnCount) {
-        val wordPoolSizes = calculateWordSlots(
-            maxWidth,
-            maxHeight,
-            longestWordLength,
-            minimumIntraColumnPadding,
-            colCount
-        )
-
-        if (wordPoolSizes.maxWords >= wordCount) {
-            return wordPoolSizes
-        }
-    }
-
-    throw IllegalStateException("How was it not possible to fit $wordCount words into $maxColumnCount columns?!")
-}
-
-data class WordPoolSizes(
-    val letterPersonalSpace: Dp,
-    val columnCount: Int,
-    val maxWords: Int
-)
-
-fun calculateWordSlots(
-    maxWidth: Dp,
-    maxHeight: Dp,
-    longestWordLength: Int,
-    minimumIntraColumnPadding: Float,
-    columnCount: Int
-): WordPoolSizes {
-    val lettersPerRow = (columnCount * longestWordLength) + ((columnCount - 1) * minimumIntraColumnPadding)
-    val letterSize = maxWidth / lettersPerRow
-
-    val maxRows = floor(maxHeight / letterSize).toInt()
-    val maxWords = columnCount * maxRows
-    return WordPoolSizes(
-        letterSize,
-        columnCount,
-        maxWords
-    )
 }
 
 @Composable
 fun WordPoolWord(
     definedWordState: DefinedWordState,
     letterPersonalSpace: Dp,
+    wordPadding: PaddingRatio,
     modifier: Modifier = Modifier,
-    paddedWordLength: Int? = null,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
+    onClick: (DefinedWordState) -> Unit = {}
 ) {
-
     val word = definedWordState.word
 
     Row(
         modifier = modifier
-            .size(
-                height = letterPersonalSpace,
-                width = letterPersonalSpace * (paddedWordLength ?: word.size)
-            ),
+            .padding(wordPadding * letterPersonalSpace)
+            .clickable {
+                onClick(definedWordState)
+            },
         horizontalArrangement = horizontalArrangement
     ) {
         for (letter in word) {
@@ -166,15 +98,63 @@ fun WordPoolWord(
 }
 
 
-@Preview(showBackground = true /*showSystemUi = true*/)
-@Preview(showBackground = true, /*showSystemUi = true,*/ /*device = PIXEL_FOLD,*/ heightDp = 300)
-@Preview(showBackground = true, /*showSystemUi = true,*/ /*device = PIXEL_FOLD,*/ heightDp = 100)
-@Preview(showBackground = true, /*showSystemUi = true,*/ /*device = PIXEL_FOLD,*/ heightDp = 200)
+@Preview(showBackground = true)
+@Preview(showBackground = true, heightDp = 300)
+@Preview(showBackground = true, heightDp = 100)
+@Preview(showBackground = true, heightDp = 200)
 @Composable
 fun ScoreboardViewPreview() {
-//    Box(Modifier.height(350.dp).fillMaxWidth()) {
     WordPoolView(
-        obtuseSubmissions()
+        obtuseSubmissions(),
+        horizontalArrangement = Arrangement.Center
     )
-//    }
+}
+
+fun canWordsFit(
+    letterPersonalSpace: Dp,
+    wordLengths: Sequence<Int>,
+    wordPadding: PaddingRatio,
+    availableSpace: DpSize
+): Boolean {
+    val wordHeight = letterPersonalSpace * (1 + wordPadding.vertical)
+    val maxWordsPerColumn = floor((availableSpace.height / wordHeight)).toInt()
+
+    if (maxWordsPerColumn <= 0) {
+        return false
+    }
+
+    var widthLeft = availableSpace.width
+    for (column in wordLengths.chunked(maxWordsPerColumn)) {
+        val columnWidth = letterPersonalSpace * (column.max() + wordPadding.horizontal)
+        widthLeft -= columnWidth
+        if (widthLeft < 0.dp) {
+            return false
+        }
+    }
+
+    return true
+}
+
+fun shrinkLettersToFit(
+    maxLetterPersonalSpace: Dp,
+    wordLengths: Sequence<Int>,
+    wordPadding: PaddingRatio,
+    availableSpace: DpSize,
+    decrement: Dp = 1.dp
+): Dp {
+    assert(decrement > 0.dp)
+
+    return JetpackBoosters.shrinkToFit(
+        maxValue = maxLetterPersonalSpace,
+        checkFit = {
+            canWordsFit(
+                it,
+                wordLengths,
+                wordPadding,
+                availableSpace
+            )
+        },
+        bigShrinker = { it * .9f },
+        littleGrower = { it + 1.dp }
+    )
 }

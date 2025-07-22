@@ -7,16 +7,19 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import brava.fightinwords.gameplay.Accepted
 import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.Typesetter
 import brava.fightinwords.gameplay.Unplayed
 import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.LetterPool
+import brava.fightinwords.gameplay.data.Word.Companion.toWord
+import brava.fightinwords.ui.PreviewHelpers.deez
 import brava.fightinwords.ui.submissions.DefinitionBox
 import brava.fightinwords.ui.submissions.WordPoolView
 import brava.fightinwords.ui.typesetter.*
@@ -26,8 +29,11 @@ import brava.fightinwords.ui.typesetter.*
 fun GameScreen(
     typesetterState: TypesetterState,
     typesetterButtons: TypesetterButtons,
-    focusedDefinition: DefinedWordState?,
-    playableWords: List<DefinedWordState>,
+    focusedDefinition: FocusedDefinitionState?,
+    onExpandDefinition: () -> Unit = {},
+    onCollapseDefinition: () -> Unit = {},
+    visibleWords: List<DefinedWordState>,
+    onWordClicked: (DefinedWordState) -> Unit,
     uiSettings: UiSettings,
     modifier: Modifier = Modifier
 ) {
@@ -36,34 +42,36 @@ fun GameScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.fillMaxSize()
     ) {
-        TopBar(
-            modifier = Modifier.height(100.dp)
-                .background(Color.LightGray, MaterialTheme.shapes.large)
-        )
+//        TopBar(
+//            modifier = Modifier.height(100.dp)
+//                .background(Color.LightGray, MaterialTheme.shapes.large)
+//        )
 
         for (section in uiSettings.sectionOrder) {
             when (section) {
                 UiSettings.UiSection.Scoreboard -> {
                     WordPoolView(
-                        playableWords,
+                        visibleWords,
                         modifier = Modifier.weight(1f, fill = false)
                             .padding(horizontal = 20.dp)
                             .fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.Center,
+                        onWordClicked = onWordClicked
                     )
                 }
 
                 UiSettings.UiSection.Definition -> {
                     DefinitionBox(
-                        focusedDefinition,
+                        focusedDefinition?.definedWord,
                         modifier = Modifier
-                            .sizeIn(minHeight = 120.dp)
+                            .height(height = 150.dp)
                             .fillMaxWidth()
                             .padding(10.dp)
                             .background(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = MaterialTheme.shapes.medium
-                            )
+                            ),
+                        onClick = onExpandDefinition
                     )
                 }
 
@@ -74,6 +82,18 @@ fun GameScreen(
                         uiSettings,
                     )
                 }
+            }
+        }
+
+        // The definition popup
+        if (focusedDefinition?.poppedUp == true) {
+            Dialog(
+                onDismissRequest = onCollapseDefinition
+            ) {
+                DefinitionBox(
+                    focusedDefinition.definedWord,
+                    onClick = onCollapseDefinition
+                )
             }
         }
     }
@@ -107,9 +127,17 @@ fun GameScreenPreview() {
 
     GameScreen(
         typesetterState = typesetter.snapshot(),
-        typesetterButtons = typesetter.buttons(),
-        focusedDefinition = Unplayed(PreviewHelpers.deez),
-        playableWords = obtuseSubmissions(),
-        uiSettings = UiSettings()
+        typesetterButtons = typesetter.buttons({}),
+        focusedDefinition = FocusedDefinitionState(
+            Unplayed(deez)
+        ),
+        visibleWords = listOf(
+            Unplayed(deez.copy(word = "aaaa".toWord(), isNaspaWord = true)),
+            Accepted(deez.copy(word = "bbbb".toWord(), isNaspaWord = true), 99),
+            Unplayed(deez.copy(word = "cccc".toWord(), isNaspaWord = false)),
+            Accepted(deez.copy(word = "dddd".toWord(), isNaspaWord = false), 999),
+        ),
+        uiSettings = UiSettings(),
+        onWordClicked = {}
     )
 }

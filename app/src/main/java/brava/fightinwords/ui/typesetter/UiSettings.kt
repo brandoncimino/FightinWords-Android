@@ -5,14 +5,11 @@ import brava.fightinwords.gameplay.LetterCase
 
 data class UiSettings(
     val maxButtonsPerRow: Int? = null,
+    val comfortableButtonsPerRow: Int = 6,
     val letterButtonCase: LetterCase = LetterCase.Uppercase,
     val rejectionDisplay: RejectionDisplay = RejectionDisplay.Include,
-    val sectionOrder: Set<UiSection> = UiSection.entries.toSet(),
-    val bonusWordVisibility: BonusWordVisibility = BonusWordVisibility.HiddenUntilPlayed
+    val sectionOrder: Set<UiSection> = UiSection.entries.toSet()
 ) {
-    companion object {
-        const val ComfortableButtonsPerRow: Int = 6
-    }
 
     enum class RejectionDisplay {
         Include,
@@ -23,12 +20,6 @@ data class UiSettings(
         Scoreboard,
         Typesetter,
         Definition
-    }
-
-    enum class BonusWordVisibility {
-        HiddenUntilPlayed,
-        Distinguished,
-        Indistinguishable
     }
 }
 

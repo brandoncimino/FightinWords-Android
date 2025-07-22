@@ -2,6 +2,7 @@ package brava.fightinwords.ui.typesetter
 
 import brava.fightinwords.gameplay.LetterSorting
 import brava.fightinwords.gameplay.Typesetter
+import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.ui.typesetter.TypesetterButtons.Companion.clickSortButton
 import kotlin.random.Random
 
@@ -41,11 +42,16 @@ class TypesetterButtons(
     }
 }
 
-fun Typesetter.buttons(): TypesetterButtons {
+fun Typesetter.buttons(
+    processSubmittedWord: (Word) -> Unit
+): TypesetterButtons {
     return TypesetterButtons(
         onSortButtonClick = { sortButton: SortButton -> clickSortButton(sortButton, this) },
         onLetterButtonClick = this::toggle,
         onGalleyButtonClick = { this.toggle(this.galley.get(it)) },
-        onSubmit = this::submitAndClear
+        onSubmit = {
+            val submittedWord = this.submitAndClear()
+            processSubmittedWord(submittedWord)
+        }
     )
 }

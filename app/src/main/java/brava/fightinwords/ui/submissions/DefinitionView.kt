@@ -1,44 +1,67 @@
 package brava.fightinwords.ui.submissions
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.util.fastJoinToString
+import androidx.compose.ui.window.Dialog
 import brava.fightinwords.gameplay.Accepted
 import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.Unplayed
+import brava.fightinwords.ui.PreviewHelpers
 import brava.fightinwords.ui.PreviewHelpers.deez
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DefinitionBox(
     definedWord: DefinedWordState?,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(10.dp)
+    contentPadding: PaddingValues = PaddingValues(10.dp),
+    onClick: () -> Unit = {}
 ) {
-    Box(
-        modifier = modifier
+    var poppedUp = remember { false }
+
+    Card(
+        modifier = modifier,
+        onClick = onClick
     ) {
         when (definedWord) {
             null -> Text(" ")
-            else -> DefinitionView(
-                definedWord,
-                modifier = Modifier.padding(contentPadding)
-            )
+            else -> {
+                DefinitionView(
+                    definedWord,
+                    modifier = Modifier.padding(contentPadding)
+                )
+            }
+        }
+
+        if (poppedUp && definedWord != null) {
+            Dialog(
+                onDismissRequest = { println("popping down!"); poppedUp = false }
+            ) {
+                Card {
+                    DefinitionView(
+                        definedWord
+                    )
+                }
+            }
         }
     }
 }
@@ -50,11 +73,9 @@ fun DefinitionView(
     wordStyle: TextStyle = MaterialTheme.typography.headlineLarge,
     subtitleStyle: TextStyle = MaterialTheme.typography.bodyLarge
         .copy(fontStyle = FontStyle.Italic),
-    definitionStyle: TextStyle = MaterialTheme.typography.titleLarge,
-    definitionIndent: TextUnit = 2.em
+    definitionStyle: TextStyle = MaterialTheme.typography.bodyLarge
 ) {
-
-    Column(modifier = modifier) {
+    Card(modifier = modifier) {
         Row(
             verticalAlignment = Alignment.Bottom
         ) {
@@ -63,8 +84,9 @@ fun DefinitionView(
                     this.append(definedWord.word.toString() + " ")
 
                     val parts = sequence {
-                        if (definedWord.wordDefinition.partOfSpeech != null) {
-                            yield(definedWord.wordDefinition.partOfSpeech)
+                        val partOfSpeech = definedWord.wordDefinition.partOfSpeech?.lowercase()
+                        if (partOfSpeech != null) {
+                            yield(partOfSpeech)
                         }
 
                         if (definedWord is Accepted) {
@@ -91,16 +113,10 @@ fun DefinitionView(
         }
 
         Text(
-            text = buildAnnotatedString {
-                withStyle(
-                    ParagraphStyle(
-                        textIndent = TextIndent(definitionIndent, definitionIndent)
-                    )
-                ) {
-                    append(definedWord.wordDefinition.definition)
-                }
-            },
+            text = definedWord.wordDefinition.definition,
             style = definitionStyle,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = 10.dp)
         )
     }
 }
@@ -110,7 +126,7 @@ class WordDefinitionPreviews : PreviewParameterProvider<DefinedWordState> {
     override val values: Sequence<DefinedWordState>
         get() = sequenceOf(
             Accepted(deez, 99),
-            Unplayed(deez)
+            Unplayed(PreviewHelpers.longDefinition)
         )
 }
 

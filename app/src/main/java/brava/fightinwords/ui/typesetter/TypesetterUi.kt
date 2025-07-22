@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import brava.fightinwords.gameplay.Typesetter
 import brava.fightinwords.gameplay.data.Word
 
-data class TypesetterUi(
+class TypesetterUi(
     private val mutableState: MutableState<TypesetterState>,
     val buttons: TypesetterButtons
 ) {

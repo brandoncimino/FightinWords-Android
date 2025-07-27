@@ -1,7 +1,9 @@
 package brava.fightinwords.gameplay.data
 
+import kotlinx.serialization.Serializable
 import java.util.function.IntFunction
 
+@Serializable
 data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
     fun canConstruct(word: Collection<Letter>): Boolean {
         if (word.size > size) {

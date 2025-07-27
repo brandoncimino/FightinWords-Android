@@ -4,7 +4,9 @@ import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.Word
 
-class ScrabbleScorer : WordScorer {
+sealed class ScrabbleScorer : WordScorer {
+    companion object Default : ScrabbleScorer()
+
     private fun getLetterScore(letter: Letter, language: KnownLanguage): Int {
         val lower = letter.character.lowercaseChar()
         return when (language) {

@@ -1,14 +1,15 @@
 package brava.fightinwords.gameplay
 
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
-import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word
-import kotlinx.serialization.Serializable
 import java.util.Comparator.comparing
 import kotlin.random.Random
 
-class Typesetter(slugs: List<Slug>) {
+class Typesetter(
+    slugs: List<Slug>,
+    val galley: Galley<Slug> = Galley(slugs.size)
+) {
     /**
      * @param progenitorPool The original [Slug]s that the game was started with.
      */
@@ -22,34 +23,28 @@ class Typesetter(slugs: List<Slug>) {
     var currentPool: List<Slug> = slugs
         private set
 
-    @Serializable
-    data class SerializableSlugState(
-        val letter: Letter,
-        val galleyIndex: Int?
-    )
-
     /**
      * Constructs a [Typesetter] that is already "in-progress".
      */
     constructor(
-        slugStates: List<SerializableSlugState>
+        slugStates: Collection<Slug.State>
     ) : this(
-        slugStates.map { Slug(it.letter) }
+        slugStates.map { Slug(it.letter) },
     ) {
         val indexed = slugStates.withIndex()
-        indexed.filter { (index, state) -> state.galleyIndex != null }
-            .sortedBy { (index, state) -> state.galleyIndex }
-            .forEach { (index, state) -> galley.add(currentPool[index]) }
+        indexed.filter<IndexedValue<Slug.State>> { (_, state) -> state.galleyIndex >= 0 }
+            .sortedBy<IndexedValue<Slug.State>, Int> { (_, state) -> state.galleyIndex }
+            .forEach<IndexedValue<Slug.State>> { (index, _) -> galley.add(currentPool[index]) }
     }
 
     /**
      * The selected letters waiting to be submitted.
      */
-    val galley: Galley<Slug> = Galley<Slug>(slugs.size)
+//    val galley: Galley<Slug> = Galley(slugs.size)
 
-    data class SortState(val letterSorting: LetterSorting, val isDescending: Boolean)
+    private data class SortState(val letterSorting: LetterSorting, val isDescending: Boolean)
 
-    var currentSorting: SortState? = null;
+    private var currentSorting: SortState? = null;
 
     fun shuffle(random: Random) {
         currentPool = currentPool.shuffled(random)
@@ -99,7 +94,22 @@ class Typesetter(slugs: List<Slug>) {
         return word
     }
 
-    fun Slug.isSlotted(): Boolean {
-        return galley.contains(this)
+    fun getSerializableState(): List<Slug.State> {
+        return currentPool.map {
+            Slug.State(
+                it.letter,
+                galley.indexOf(it)
+            )
+        }
+    }
+
+    fun requestLetterSorting(letterSorting: LetterSorting) {
+        val currentSorting = currentSorting;
+        val descending = when (currentSorting?.letterSorting) {
+            letterSorting -> !currentSorting.isDescending
+            else -> false
+        }
+
+        return sort(letterSorting, descending)
     }
 }

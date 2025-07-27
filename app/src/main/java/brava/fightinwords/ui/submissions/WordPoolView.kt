@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.Accepted
 import brava.fightinwords.gameplay.DefinedWordState
+import brava.fightinwords.gameplay.WordState
 import brava.fightinwords.ui.JetpackBoosters
 import brava.fightinwords.ui.PaddingRatio
 import brava.fightinwords.ui.obtuseSubmissions
@@ -19,13 +20,13 @@ import kotlin.math.floor
 
 @Composable
 fun WordPoolView(
-    visibleWords: List<DefinedWordState>,
+    visibleWords: List<WordState>,
     modifier: Modifier = Modifier,
     padToLongestWord: Boolean = false,
     wordPadding: PaddingRatio = PaddingRatio(horizontal = .5f, vertical = .2f),
     maxLetterPersonalSpace: Dp = 55.dp,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.SpaceBetween,
-    onWordClicked: (DefinedWordState) -> Unit = {}
+    onWordClicked: (WordState) -> Unit = {}
 ) {
     check(visibleWords.isNotEmpty(), { "Can't render a word pool without any words!" })
 
@@ -52,7 +53,7 @@ fun WordPoolView(
         ) {
             for (state in visibleWords) {
                     WordPoolWord(
-                        definedWordState = state,
+                        wordState = state,
                         letterPersonalSpace = letterPersonalSpace,
                         wordPadding = wordPadding,
                         onClick = onWordClicked
@@ -64,33 +65,34 @@ fun WordPoolView(
 
 @Composable
 fun WordPoolWord(
-    definedWordState: DefinedWordState,
+    wordState: WordState,
     letterPersonalSpace: Dp,
     wordPadding: PaddingRatio,
     modifier: Modifier = Modifier,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
-    onClick: (DefinedWordState) -> Unit = {}
+    onClick: (WordState) -> Unit = {}
 ) {
-    val word = definedWordState.word
+    val word = wordState.word
 
     Row(
         modifier = modifier
             .padding(wordPadding * letterPersonalSpace)
             .clickable {
-                onClick(definedWordState)
+                onClick(wordState)
             },
         horizontalArrangement = horizontalArrangement
     ) {
+        val flavor = when (wordState is DefinedWordState && wordState.wordDefinition.isNaspaWord) {
+            true -> LetterTileFlavor.Submission
+            false -> LetterTileFlavor.BonusWord
+        }
         for (letter in word) {
             LetterTile(
-                letter = when (definedWordState) {
+                letter = when (wordState) {
                     is Accepted -> letter.toString()
                     else -> " "
                 },
-                flavor = when (definedWordState.wordDefinition.isNaspaWord) {
-                    true -> LetterTileFlavor.Submission
-                    false -> LetterTileFlavor.BonusWord
-                },
+                flavor = flavor,
                 personalSpace = letterPersonalSpace,
             )
         }

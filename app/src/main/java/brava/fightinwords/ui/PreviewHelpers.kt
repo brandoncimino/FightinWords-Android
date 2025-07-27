@@ -9,14 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import brava.fightinwords.gameplay.Accepted
-import brava.fightinwords.gameplay.DefinedWordState
-import brava.fightinwords.gameplay.KnownLanguage
-import brava.fightinwords.gameplay.Unplayed
+import brava.fightinwords.gameplay.*
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
-import brava.fightinwords.ui.typesetter.LetterButtonState
 import brava.fightinwords.ui.typesetter.TypesetterState
 
 object PreviewHelpers {
@@ -129,6 +125,7 @@ internal fun obtuseSubmissions(padWordsToLength: Int? = null): List<DefinedWordS
 }
 
 internal fun swaggins(): TypesetterState {
+    var galleyIndex = 0;
     val letterButtonStates = listOf(
         's' to true,
         'w' to false,
@@ -141,10 +138,17 @@ internal fun swaggins(): TypesetterState {
         't' to false,
         'a' to false,
         'c' to false
-    ).map { (letter, isSlotted) -> LetterButtonState(letter.toLetter(), isSlotted) }
+    ).map { (letter, isSlotted) ->
+        Slug.State(
+            letter.toLetter(), when (isSlotted) {
+                true -> galleyIndex++
+                false -> -1
+            }
+        )
+    }
     return TypesetterState(
         letterButtonStates
-            .filter { it.isSlotted }
+            .filter { it.isSlotted() }
             .map { it.letter }
             .toWord(),
         letterButtonStates

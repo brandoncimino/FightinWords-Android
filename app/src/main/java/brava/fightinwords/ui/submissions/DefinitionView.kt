@@ -1,5 +1,6 @@
 package brava.fightinwords.ui.submissions
 
+import android.util.Log
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -22,11 +23,14 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastJoinToString
 import androidx.compose.ui.window.Dialog
+import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.Accepted
 import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.Unplayed
+import brava.fightinwords.gameplay.wordlookup.WordDefinition
 import brava.fightinwords.ui.PreviewHelpers
 import brava.fightinwords.ui.PreviewHelpers.deez
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,7 +58,7 @@ fun DefinitionBox(
 
         if (poppedUp && definedWord != null) {
             Dialog(
-                onDismissRequest = { println("popping down!"); poppedUp = false }
+                onDismissRequest = { blog(Log.VERBOSE) { "popping down!" }; poppedUp = false }
             ) {
                 Card {
                     DefinitionView(
@@ -126,7 +130,10 @@ class WordDefinitionPreviews : PreviewParameterProvider<DefinedWordState> {
     override val values: Sequence<DefinedWordState>
         get() = sequenceOf(
             Accepted(deez, 99),
-            Unplayed(PreviewHelpers.longDefinition)
+            Unplayed(PreviewHelpers.longDefinition),
+            Unplayed(
+                Json.decodeFromString<WordDefinition>(Json.encodeToString(deez))
+            )
         )
 }
 

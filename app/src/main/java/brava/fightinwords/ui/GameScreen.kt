@@ -3,19 +3,15 @@ package brava.fightinwords.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import brava.fightinwords.gameplay.Accepted
-import brava.fightinwords.gameplay.DefinedWordState
-import brava.fightinwords.gameplay.Typesetter
-import brava.fightinwords.gameplay.Unplayed
+import brava.fightinwords.botlin.blog
+import brava.fightinwords.gameplay.*
 import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
@@ -24,29 +20,46 @@ import brava.fightinwords.ui.submissions.DefinitionBox
 import brava.fightinwords.ui.submissions.WordPoolView
 import brava.fightinwords.ui.typesetter.*
 
+//@Composable
+//fun GameScreen(
+//    gameScreenState: GameScreenState,
+//    typesetterButtons: TypesetterButtons,
+//    modifier: Modifier = Modifier,
+//    onExpandDefinition : () -> Unit = {},
+//    onCollapseDefinition : () -> Unit = {},
+//    uiSettings: UiSettings
+//){
+//    val typesetterState = remember { derivedStateOf { gameScreenState.typesetterState } }.value
+//    GameScreen(
+//        typesetterState = typesetterState,
+//        typesetterButtons = typesetterButtons,
+//        focusedDefinition = remember { derivedStateOf { gameScreenState.focusedDefinition } }.value,
+//        modifier = modifier,
+//        onExpandDefinition = onExpandDefinition,
+//        onCollapseDefinition = onCollapseDefinition,
+//        visibleWords = remember {derivedStateOf { gameScreenState.visibleWordStates } }.value,
+//        onWordClicked = {},
+//        uiSettings = uiSettings
+//    )
+//}
 
 @Composable
 fun GameScreen(
     typesetterState: TypesetterState,
     typesetterButtons: TypesetterButtons,
-    focusedDefinition: FocusedDefinitionState?,
+    focusedDefinition: FocusLens.State<DefinedWordState>?,
+    modifier: Modifier = Modifier,
     onExpandDefinition: () -> Unit = {},
     onCollapseDefinition: () -> Unit = {},
-    visibleWords: List<DefinedWordState>,
-    onWordClicked: (DefinedWordState) -> Unit,
-    uiSettings: UiSettings,
-    modifier: Modifier = Modifier
+    visibleWords: List<WordState>,
+    onWordClicked: (WordState) -> Unit,
+    uiSettings: UiSettings = UiSettings()
 ) {
     Column(
         verticalArrangement = Arrangement.Bottom,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.fillMaxSize()
     ) {
-//        TopBar(
-//            modifier = Modifier.height(100.dp)
-//                .background(Color.LightGray, MaterialTheme.shapes.large)
-//        )
-
         for (section in uiSettings.sectionOrder) {
             when (section) {
                 UiSettings.UiSection.Scoreboard -> {
@@ -62,7 +75,7 @@ fun GameScreen(
 
                 UiSettings.UiSection.Definition -> {
                     DefinitionBox(
-                        focusedDefinition?.definedWord,
+                        focusedDefinition?.target,
                         modifier = Modifier
                             .height(height = 150.dp)
                             .fillMaxWidth()
@@ -86,31 +99,17 @@ fun GameScreen(
         }
 
         // The definition popup
-        if (focusedDefinition?.poppedUp == true) {
+        blog { "checking for the definition popup: zoomed = ${focusedDefinition?.zoomed}" }
+        if (focusedDefinition?.zoomed == true) {
             Dialog(
                 onDismissRequest = onCollapseDefinition
             ) {
                 DefinitionBox(
-                    focusedDefinition.definedWord,
+                    focusedDefinition.target,
                     onClick = onCollapseDefinition
                 )
             }
         }
-    }
-}
-
-@Composable
-fun TopBar(
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier,
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            "(this space intentionally left blank)",
-            fontStyle = FontStyle.Italic
-        )
     }
 }
 
@@ -127,8 +126,8 @@ fun GameScreenPreview() {
 
     GameScreen(
         typesetterState = typesetter.snapshot(),
-        typesetterButtons = typesetter.buttons({}),
-        focusedDefinition = FocusedDefinitionState(
+        typesetterButtons = typesetter.buttons {},
+        focusedDefinition = FocusLens.State(
             Unplayed(deez)
         ),
         visibleWords = listOf(
@@ -137,7 +136,6 @@ fun GameScreenPreview() {
             Unplayed(deez.copy(word = "cccc".toWord(), isNaspaWord = false)),
             Accepted(deez.copy(word = "dddd".toWord(), isNaspaWord = false), 999),
         ),
-        uiSettings = UiSettings(),
         onWordClicked = {}
     )
 }

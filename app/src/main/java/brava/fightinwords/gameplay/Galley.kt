@@ -1,12 +1,16 @@
 package brava.fightinwords.gameplay
 
+import android.util.Log
+import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 
 class Galley<T>(
-    val capacity: Int
+    val capacity: Int,
+    initialState: Iterable<T> = listOf()
 ) {
-    private val composingStick: ArrayDeque<T> = ArrayDeque(capacity)
+    private val composingStick: ArrayDeque<T> = ArrayDeque<T>(capacity)
+        .apply { addAll(initialState) }
 
     val isFull : Boolean get() {
         // 📎 You can do this in an "expression" style, using:
@@ -30,7 +34,7 @@ class Galley<T>(
 
         composingStick.add(slug);
 
-        log("Adding $slug produced: ${composingStick}")
+        log("Adding $slug produced: $composingStick")
 
         assert(composingStick.size > beforeSize)
     }
@@ -45,7 +49,7 @@ class Galley<T>(
         }
 
         composingStick.remove(slug)
-        println("Removing $slug produced: $composingStick")
+        blog(Log.VERBOSE) { "Removing $slug produced: $composingStick" }
     }
 
     fun clear(){
@@ -72,5 +76,9 @@ class Galley<T>(
         fun Galley<Slug>.currentLetters(): Word {
             return composingStick.map { it.letter }.toWord()
         }
+    }
+
+    fun indexOf(element: T): Int {
+        return composingStick.indexOf(element)
     }
 }

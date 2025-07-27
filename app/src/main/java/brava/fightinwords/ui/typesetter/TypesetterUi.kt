@@ -1,28 +1,32 @@
 package brava.fightinwords.ui.typesetter
 
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import brava.fightinwords.gameplay.Typesetter
-import brava.fightinwords.gameplay.data.Word
 
 class TypesetterUi(
-    private val mutableState: MutableState<TypesetterState>,
-    val buttons: TypesetterButtons
+    private val stateGetter: () -> TypesetterState,
+    buttons: TypesetterButtons
 ) {
+    private val mutableState = mutableStateOf(stateGetter())
     val state by mutableState
+    val buttons = buttons.then { refresh() }
 
     companion object {
         fun Typesetter.createUi(
-            processSubmittedWord: (Word) -> Unit
+            onSubmitWord: () -> Unit,
+            stateGetter: () -> TypesetterState = { snapshot() }
         ): TypesetterUi {
-            val mutableState = mutableStateOf(this.snapshot())
-            val buttons = this.buttons(processSubmittedWord).then { mutableState.value = snapshot() }
+            val buttons = this.buttons(onSubmitWord)
 
             return TypesetterUi(
-                mutableState,
+                stateGetter,
                 buttons
             )
         }
+    }
+
+    fun refresh() {
+        mutableState.value = stateGetter()
     }
 }

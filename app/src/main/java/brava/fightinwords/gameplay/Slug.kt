@@ -1,6 +1,7 @@
 package brava.fightinwords.gameplay
 
 import brava.fightinwords.gameplay.data.Letter
+import kotlinx.serialization.Serializable
 
 /**
  * A physical [brava.fightinwords.gameplay.data.Letter] object that can be moved around by a [Typesetter].
@@ -10,5 +11,13 @@ import brava.fightinwords.gameplay.data.Letter
 class Slug(val letter: Letter) {
     override fun toString(): String {
         return "🔲$letter"
+    }
+
+    @Serializable
+    data class State(
+        val letter: Letter,
+        val galleyIndex: Int
+    ) {
+        fun isSlotted() = galleyIndex >= 0
     }
 }

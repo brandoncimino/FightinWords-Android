@@ -1,6 +1,6 @@
 package brava.fightinwords.gameplay
 
-enum class KnownLanguage(isoLanguageCode: String) {
+enum class KnownLanguage(val isoLanguageCode: String) {
     English("en"),
     German("de"),
     Dutch("nl"),

@@ -1,5 +1,6 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
@@ -22,7 +23,7 @@ class WordFileLookup(wordStream: InputStream) : WordLookup {
             wordLengthCounts.compute(it.length) { _, count -> (count ?: 0) + 1 }
         }
 
-        println("Loaded ${words.size} words!")
+        blog { "Loaded ${words.size} words!" }
     }
 
     override fun isWord(word: Word): Boolean = words.contains(word)

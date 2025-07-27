@@ -9,19 +9,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import brava.fightinwords.gameplay.data.Letter
+import brava.fightinwords.gameplay.Slug
 import brava.fightinwords.ui.swaggins
-
-data class LetterButtonState(
-    val letter: Letter,
-    val isSlotted: Boolean
-) {
-    constructor(pair: Pair<Letter, Boolean>) : this(pair.first, pair.second)
-}
 
 @Composable
 fun LetterPoolView(
-    letterButtonStates: List<LetterButtonState>,
+    letterButtonStates: List<Slug.State>,
     uiSettings: UiSettings = UiSettings(),
     personalSpace: Dp,
     onLetterButtonClick: (index: Int) -> Unit
@@ -38,7 +31,7 @@ fun LetterPoolView(
                     letter = letterButtonState.letter.toString(),
                     letterCase = uiSettings.letterButtonCase,
                     personalSpace = personalSpace,
-                    flavor = when (letterButtonState.isSlotted) {
+                    flavor = when (letterButtonState.isSlotted()) {
                         true -> LetterTileFlavor.PoolSlotted
                         false -> LetterTileFlavor.PollUnslotted
                     },

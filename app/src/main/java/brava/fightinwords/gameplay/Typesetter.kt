@@ -1,8 +1,11 @@
 package brava.fightinwords.gameplay
 
+import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.scoring.EmployeeFactory
+import kotlinx.serialization.Serializable
 import java.util.Comparator.comparing
 import kotlin.random.Random
 
@@ -94,15 +97,6 @@ class Typesetter(
         return word
     }
 
-    fun getSerializableState(): List<Slug.State> {
-        return currentPool.map {
-            Slug.State(
-                it.letter,
-                galley.indexOf(it)
-            )
-        }
-    }
-
     fun requestLetterSorting(letterSorting: LetterSorting) {
         val currentSorting = currentSorting;
         val descending = when (currentSorting?.letterSorting) {
@@ -111,5 +105,29 @@ class Typesetter(
         }
 
         return sort(letterSorting, descending)
+    }
+
+    @JvmInline
+    @Serializable
+    value class SerializableState(val slugStates: List<Slug.State>)
+
+    companion object : EmployeeFactory<Typesetter, SerializableState> {
+        override fun Typesetter.getSerializableState(): SerializableState {
+            return currentPool.map {
+                Slug.State(
+                    it.letter,
+                    galley.indexOf(it)
+                )
+            }.let { SerializableState(it) }
+        }
+
+        override fun fromSerializableState(
+            state: SerializableState,
+            gamePlan: GamePlan
+        ): Typesetter {
+            return Typesetter(state.slugStates)
+        }
+
+        override fun SaveGameState.getEmployeeState(): SerializableState = typesetterState
     }
 }

@@ -41,3 +41,5 @@ inline fun <reified T : Any> Bundle.readJson(key: String? = T::class.qualifiedNa
 
     return jsonThingy.decodeFromString(json)
 }
+
+val IntRange.size: Int get() = endInclusive - start + 1

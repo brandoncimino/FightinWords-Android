@@ -1,7 +1,11 @@
 package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
-import brava.fightinwords.SaveGameState.Companion.getFocusedWordDefinition
+import brava.fightinwords.gameplay.Typesetter.Companion.getSerializableState
+import brava.fightinwords.gameplay.Umpire.Companion.getSerializableState
+import brava.fightinwords.gameplay.scoring.EmployeeFactory.Companion.load
+import brava.fightinwords.gameplay.scoring.Scoreboard
+import brava.fightinwords.gameplay.scoring.Scoreboard.Companion.getSerializableState
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
@@ -15,7 +19,7 @@ class GameInProgress(
     val gamePlan: GamePlan,
     val umpire: Umpire,
     val typesetter: Typesetter,
-    val focusedDefinition: FocusLens<DefinedWordState>,
+    val scoreboard: Scoreboard,
     val onStatePossiblyChanged: () -> Unit = {}
 ) {
     companion object {
@@ -25,18 +29,12 @@ class GameInProgress(
             wordScorer: WordScorer = ScrabbleScorer,
             onStatePossiblyChanged: () -> Unit = {}
         ): GameInProgress {
-            val umpire = Umpire(
-                wordPool = wordPool,
-                wordScorer = wordScorer
-            )
-
-            val typesetter = Typesetter(gamePlan.letterPool)
 
             return GameInProgress(
                 gamePlan = gamePlan,
-                umpire = umpire,
-                typesetter = typesetter,
-                focusedDefinition = FocusLens(),
+                umpire = Umpire(wordPool, wordScorer),
+                typesetter = Typesetter(gamePlan.letterPool),
+                scoreboard = Scoreboard(gamePlan.unsubmittedWordVisibility),
                 onStatePossiblyChanged = onStatePossiblyChanged
             )
         }
@@ -44,14 +42,11 @@ class GameInProgress(
         fun resumeGame(
             saveGameState: SaveGameState
         ): GameInProgress {
-            val umpire = Umpire(saveGameState.wordStates)
-            val typesetter = Typesetter(saveGameState.slugs)
-
             return GameInProgress(
                 saveGameState.gamePlan,
-                umpire,
-                typesetter,
-                FocusLens(saveGameState.getFocusedWordDefinition())
+                Umpire.load(saveGameState),
+                Typesetter.load(saveGameState),
+                Scoreboard.load(saveGameState)
             )
         }
     }
@@ -59,9 +54,9 @@ class GameInProgress(
     fun getSerializableState(): SaveGameState {
         return SaveGameState(
             gamePlan = gamePlan,
-            slugs = typesetter.getSerializableState(),
-            wordStates = umpire.snapshot(),
-            focusedWordState = focusedDefinition.state?.map { it.word }
+            typesetterState = typesetter.getSerializableState(),
+            umpireState = umpire.getSerializableState(),
+            scoreboardState = scoreboard.getSerializableState()
         )
     }
 
@@ -69,7 +64,7 @@ class GameInProgress(
         val submittedWord = typesetter.submitAndClear()
         val submissionResult = umpire.submitWord(submittedWord)
         if (submissionResult.wordState is DefinedWordState) {
-            focusedDefinition.focusOn(submissionResult.wordState)
+            scoreboard.focusOnWord(submissionResult.wordState)
         }
         onStatePossiblyChanged()
     }

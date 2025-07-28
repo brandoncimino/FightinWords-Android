@@ -1,10 +1,10 @@
 package brava.fightinwords.gameplay
 
 import kotlinx.serialization.Serializable
+import kotlin.reflect.KProperty
 
 class FocusLens<T>(initialState: State<T>? = null) {
     constructor(initialValue: T?, zoomed: Boolean = false) : this(initialValue?.let { State(it, zoomed) })
-
 
     var state: State<T>? = initialState
         private set
@@ -30,4 +30,9 @@ class FocusLens<T>(initialState: State<T>? = null) {
             return State(mapper(target), zoomed)
         }
     }
+
+    /**
+     * Funky syntax that lets you use that fancy `val x by y` syntax.
+     */
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): State<T>? = state
 }

@@ -1,8 +1,10 @@
 package brava.fightinwords.gameplay
 
 import android.util.Log
+import brava.fightinwords.SaveGameState
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.scoring.EmployeeFactory
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
@@ -36,7 +38,7 @@ class Umpire private constructor(
         language = language
     )
 
-    companion object {
+    companion object : EmployeeFactory<Umpire, SerializableState> {
         private fun Iterable<WordState>.toWordStatesMap(): MutableMap<Word, WordState> {
             return this
                 .sortedBy { it.word.length /*TODO: sorting should be stricter and depend on the current `GamePlan`, i.e. probably not be the responsibility of the `Umpire`*/ }
@@ -51,6 +53,19 @@ class Umpire private constructor(
                     it.word to Unplayed(it)
                 }
         }
+
+        override fun Umpire.getSerializableState(): SerializableState {
+            return SerializableState(snapshot())
+        }
+
+        override fun fromSerializableState(
+            state: SerializableState,
+            gamePlan: GamePlan
+        ): Umpire {
+            return Umpire(state.wordStates)
+        }
+
+        override fun SaveGameState.getEmployeeState(): SerializableState = umpireState
     }
 
     init {

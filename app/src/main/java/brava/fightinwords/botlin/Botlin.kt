@@ -43,3 +43,32 @@ inline fun <reified T : Any> Bundle.readJson(key: String? = T::class.qualifiedNa
 }
 
 val IntRange.size: Int get() = endInclusive - start + 1
+
+inline fun <I, O, O2> ((I) -> O).andThen(crossinline nextStep: (O) -> O2): (I) -> O2 {
+    return {
+        val firstResult = this(it)
+        nextStep(firstResult)
+    }
+}
+
+inline fun <O, O2> (() -> O).andThen(crossinline nextStep: (O) -> O2): () -> O2 {
+    return {
+        nextStep(this())
+    }
+}
+
+inline fun <I, O> ((I) -> O).andAlso(crossinline sideAction: (O) -> Any): (I) -> O {
+    return {
+        val firstResult = this(it)
+        sideAction(firstResult)
+        firstResult
+    }
+}
+
+inline fun <O> (() -> O).andAlso(crossinline sideAction: (O) -> Any): () -> O {
+    return {
+        val firstResult = this()
+        sideAction(firstResult)
+        firstResult
+    }
+}

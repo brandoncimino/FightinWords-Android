@@ -5,14 +5,7 @@ import brava.fightinwords.gameplay.data.Word
 import kotlin.random.Random
 
 fun interface WordLookup {
-    fun isWord(word: Word): Boolean;
-
-    companion object {
-        fun WordLookup.findAllPossibleWords(letterPool: LetterPool, wordLength: IntRange): List<Word> {
-            return wordLength
-                .flatMap { findAllPossibleWords(letterPool, it) }
-        }
-    }
+    fun isWord(word: Word): Boolean
 
     fun findAllPossibleWords(
         letterPool: LetterPool,

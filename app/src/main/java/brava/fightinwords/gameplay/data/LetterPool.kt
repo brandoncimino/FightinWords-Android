@@ -5,6 +5,7 @@ import java.util.function.IntFunction
 
 @Serializable
 data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
+    @Suppress("unused")
     fun canConstruct(word: Collection<Letter>): Boolean {
         if (word.size > size) {
             return false
@@ -13,20 +14,6 @@ data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
         return canConstructInternal(
             word.asSequence().map { it.character },
             CharArray(size)
-        ) >= 0
-    }
-
-    internal fun canConstructInternal(
-        word: CharSequence,
-        buffer: CharArray
-    ): Boolean {
-        if (word.length > size) {
-            return false
-        }
-
-        return canConstructInternal(
-            word.asSequence(),
-            buffer
         ) >= 0
     }
 

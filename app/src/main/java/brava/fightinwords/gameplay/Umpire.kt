@@ -4,7 +4,7 @@ import android.util.Log
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.data.Word
-import brava.fightinwords.gameplay.scoring.EmployeeFactory
+import brava.fightinwords.gameplay.hr.EmployeeFactory
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
@@ -65,7 +65,7 @@ class Umpire private constructor(
             return Umpire(state.wordStates)
         }
 
-        override fun SaveGameState.getEmployeeState(): SerializableState = umpireState
+        override fun SaveGameState.getEmployeeState(): SerializableState = ledgermanState.umpireState
     }
 
     init {

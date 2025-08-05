@@ -4,23 +4,27 @@ import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import java.io.InputStream
+import kotlin.math.min
 
 internal object WordLookupHelpers {
     fun parseConstructibleWords(
         csvStream: InputStream,
         language: KnownLanguage,
         letterPool: LetterPool,
-        csvDelimiter: Char = ','
+        wordLengthRange: IntRange,
+        csvDelimiter: Char = ',',
     ): Sequence<WordDefinition> {
-        val buffer = CharArray(letterPool.size)
+        val buffer = CharArray(min(letterPool.size, wordLengthRange.endInclusive))
 
         return csvStream.bufferedReader(Charsets.UTF_8)
             .lineSequence()
             .filter {
-                letterPool.canConstructInternal(
+                val wordLength = letterPool.canConstructInternal(
                     it.asSequence().takeWhile { c -> c != csvDelimiter },
                     buffer
                 )
+
+                return@filter wordLength in wordLengthRange
             }
             .map { parseDefinitionCsvLine(it, language) }
     }

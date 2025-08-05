@@ -12,6 +12,8 @@ import androidx.compose.ui.text.font.FontFamily
 import brava.fightinwords.gameplay.*
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
+import brava.fightinwords.gameplay.scoring.FilterState
+import brava.fightinwords.gameplay.scoring.WordFilter
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
 import brava.fightinwords.ui.typesetter.TypesetterState
 
@@ -31,7 +33,7 @@ object PreviewHelpers {
     fun Log(
         lines: Iterable<Any?>,
         verticalArrangement: Arrangement.Vertical = Arrangement.Bottom,
-        nullPlaceholder: String = "⛔"
+        nullPlaceholder: String = "⛔",
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -56,9 +58,44 @@ object PreviewHelpers {
     fun Log(
         vararg lines: Any?,
         verticalArrangement: Arrangement.Vertical = Arrangement.Bottom,
-        nullPlaceholder: String = "⛔"
+        nullPlaceholder: String = "⛔",
     ) {
         Log(lines.asIterable(), verticalArrangement, nullPlaceholder)
+    }
+
+    val gameScreenInteractions = GameScreenInteractions(
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {},
+        {}
+    )
+
+    fun ledgermanUiState(
+        wordFilterStates: List<WordFilter.State> = wordFilterStates(),
+        visibleWords: List<WordState> = obtuseSubmissions(),
+        focusedWord: FocusLens.State<DefinedWordState>? = FocusLens.State(
+            Accepted(deez, 99)
+        ),
+    ): LedgermanUiState {
+        return LedgermanUiState(
+            wordFilterStates,
+            visibleWords,
+            focusedWord
+        )
+    }
+
+    fun wordFilterStates(wordLengthRange: IntRange = 3..7): List<WordFilter.State> {
+        return wordLengthRange
+            .mapIndexed { index, wordLength ->
+                WordFilter.State(
+                    WordFilter.LengthFilter(wordLength),
+                    FilterState.entries[index % FilterState.entries.size]
+                )
+            }
     }
 }
 

@@ -13,7 +13,7 @@ data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
         return canConstructInternal(
             word.asSequence().map { it.character },
             CharArray(size)
-        )
+        ) >= 0
     }
 
     internal fun canConstructInternal(
@@ -27,36 +27,41 @@ data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
         return canConstructInternal(
             word.asSequence(),
             buffer
-        )
+        ) >= 0
     }
 
     internal fun copyTo(buffer: CharArray): CharArray {
-        assert(buffer.size >= size)
-        for (i in 0 until size) {
+        for (i in 0 until buffer.size) {
             buffer[i] = this[i].character
         }
         return buffer
     }
 
+    /**
+     * @return the length of the [word], or -1 if I can't construct it
+     */
     internal fun canConstructInternal(
         word: Sequence<Char>,
-        buffer: CharArray
-    ): Boolean {
+        buffer: CharArray,
+    ): Int {
         this.copyTo(buffer)
 
+        var length = 0
+
         for (letter in word) {
+            length += 1
             assert(letter != Char.MIN_VALUE)
 
             val matchIndex = buffer.indexOf(letter)
 
             if (matchIndex < 0) {
-                return false
+                return -1
             } else {
                 buffer[matchIndex] = Char.MIN_VALUE
             }
         }
 
-        return true
+        return length
     }
 
 

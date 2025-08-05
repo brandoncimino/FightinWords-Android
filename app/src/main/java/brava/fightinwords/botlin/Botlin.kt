@@ -3,12 +3,39 @@ package brava.fightinwords.botlin
 import android.os.Bundle
 import android.util.Log
 import kotlinx.serialization.json.Json
+import kotlin.reflect.KProperty
 
 inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String = javaClass.simpleName, message: () -> Any?) {
     if (Log.isLoggable(tag, level)) {
         Log.println(level, tag, message().toString())
     }
 }
+
+class BlogTimeline<PROP>(
+    var value: PROP,
+    val blogLevel: Int = Log.INFO,
+) {
+    operator fun getValue(owner: Any?, kProperty1: KProperty<*>) = value
+
+    operator fun setValue(owner: Any?, kProperty1: KProperty<*>, newValue: PROP) {
+        blog { "Setting ${this.value} -> $newValue" }
+        val oldValue = this.value
+        if (oldValue != newValue) {
+            this.value = newValue
+            blog(blogLevel) { "Set $oldValue -> ${this.value}" }
+        } else {
+            blog { "No change from $oldValue" }
+        }
+    }
+
+    companion object {
+        fun <PROP> Any.blogged(initialValue: PROP): BlogTimeline<PROP> {
+            return BlogTimeline(initialValue)
+        }
+
+    }
+}
+
 
 inline fun <T> T.peekIfNull(action: () -> Unit): T {
     if (this == null) {
@@ -20,7 +47,7 @@ inline fun <T> T.peekIfNull(action: () -> Unit): T {
 
 inline fun <reified T : Any> Bundle.putJson(obj: T, key: String? = T::class.qualifiedName, jsonThingy: Json = Json) {
     val json = jsonThingy.encodeToString<T>(obj)
-    blog {
+    blog(Log.VERBOSE) {
         """Saving the ${this.javaClass.simpleName} key `$key` with the ${T::class.simpleName}-JSON:
         | ```json
         | $json

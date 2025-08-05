@@ -13,10 +13,28 @@ import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.WordState
 import brava.fightinwords.ui.JetpackBoosters
 import brava.fightinwords.ui.PaddingRatio
-import brava.fightinwords.ui.obtuseSubmissions
+import brava.fightinwords.ui.PreviewHelpers
 import brava.fightinwords.ui.typesetter.LetterTile
 import brava.fightinwords.ui.typesetter.LetterTileFlavor
 import kotlin.math.floor
+
+@Composable
+fun LedgermanWordPool(
+    modifier: Modifier = Modifier,
+    visibleWords: List<WordState>,
+    onFocusWord: (WordState) -> Unit,
+) {
+    WordPoolView(
+        visibleWords = visibleWords,
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center,
+        onWordClicked = {
+            if (it is DefinedWordState) {
+                onFocusWord(it)
+            }
+        }
+    )
+}
 
 @Composable
 fun WordPoolView(
@@ -52,12 +70,12 @@ fun WordPoolView(
                 .fillMaxWidth(),
         ) {
             for (state in visibleWords) {
-                    WordPoolWord(
-                        wordState = state,
-                        letterPersonalSpace = letterPersonalSpace,
-                        wordPadding = wordPadding,
-                        onClick = onWordClicked
-                    )
+                WordPoolWord(
+                    wordState = state,
+                    letterPersonalSpace = letterPersonalSpace,
+                    wordPadding = wordPadding,
+                    onClick = onWordClicked
+                )
             }
         }
     }
@@ -99,17 +117,18 @@ fun WordPoolWord(
     }
 }
 
-
 @Preview(showBackground = true)
-@Preview(showBackground = true, heightDp = 300)
-@Preview(showBackground = true, heightDp = 100)
-@Preview(showBackground = true, heightDp = 200)
 @Composable
-fun ScoreboardViewPreview() {
-    WordPoolView(
-        obtuseSubmissions(),
-        horizontalArrangement = Arrangement.Center
-    )
+fun LedgermanViewPreview() {
+    val ledgermanUiState = PreviewHelpers.ledgermanUiState()
+    Column {
+        ScoreboardWordFilters(
+            wordFilterStates = ledgermanUiState.wordFilterStates,
+            onWordFilterClicked = {}
+        )
+
+        WordPoolView(ledgermanUiState.visibleWords)
+    }
 }
 
 fun canWordsFit(

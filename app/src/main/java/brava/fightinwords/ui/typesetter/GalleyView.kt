@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
+import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.swaggins
 
 @Composable

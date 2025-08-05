@@ -1,45 +1,28 @@
 package brava.fightinwords.ui.submissions
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import brava.fightinwords.gameplay.scoring.Scoreboard
-import brava.fightinwords.ui.MaterialColorPair
+import brava.fightinwords.gameplay.scoring.WordFilter
+import brava.fightinwords.ui.PreviewHelpers
 
 @Composable
-fun ScoreboardLengthFilterButton(
-    wordLength: Int,
-    filterState: Scoreboard.FilterState,
-    onClick: (wordLength: Int) -> Unit
+fun ScoreboardWordFilters(
+    wordFilterStates: List<WordFilter.State>,
+    onWordFilterClicked: (WordFilter.State) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val colors: MaterialColorPair = when (filterState) {
-        Scoreboard.FilterState.Disabled -> MaterialColorPair.SurfaceVariant
-        Scoreboard.FilterState.EnabledImplicitly -> MaterialColorPair.Primary
-        Scoreboard.FilterState.EnabledExplicitly -> MaterialColorPair.ErrorContainer
-    }
-
-    val isLengthVisible = filterState.isEnabled
-    Button(
-        onClick = { onClick(wordLength) },
-        colors = colors.buttonColors()
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier
     ) {
-        Text(wordLength.toString())
-    }
-}
-
-@Composable
-fun ScoreboardLengthFilters(
-    lengthFilterStates: List<Pair<Int, Scoreboard.FilterState>>,
-    onLengthFilterButtonClick: (wordLength: Int) -> Unit
-) {
-    Row {
-        lengthFilterStates.forEach { (wordLength, filterState) ->
-            ScoreboardLengthFilterButton(
-                wordLength,
-                filterState,
-                onLengthFilterButtonClick
+        wordFilterStates.forEach {
+            WordFilterButton(
+                onWordFilterClicked,
+                it,
+                miseEnScene()
             )
         }
     }
@@ -48,5 +31,8 @@ fun ScoreboardLengthFilters(
 @Preview
 @Composable
 fun ScoreboardLengthFiltersPreview() {
-
+    ScoreboardWordFilters(
+        PreviewHelpers.wordFilterStates(),
+        {}
+    )
 }

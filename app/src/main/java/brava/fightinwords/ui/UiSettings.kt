@@ -1,4 +1,4 @@
-package brava.fightinwords.ui.typesetter
+package brava.fightinwords.ui
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import brava.fightinwords.gameplay.LetterCase
@@ -8,7 +8,7 @@ data class UiSettings(
     val comfortableButtonsPerRow: Int = 6,
     val letterButtonCase: LetterCase = LetterCase.Uppercase,
     val rejectionDisplay: RejectionDisplay = RejectionDisplay.Include,
-    val sectionOrder: Set<UiSection> = UiSection.entries.toSet()
+    val sectionOrder: List<UiSection> = UiSection.entries,
 ) {
 
     enum class RejectionDisplay {
@@ -17,9 +17,10 @@ data class UiSettings(
     }
 
     enum class UiSection {
+        FilterButtons,
         Scoreboard,
         Typesetter,
-        Definition
+        Definition,
     }
 }
 

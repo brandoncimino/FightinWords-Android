@@ -2,10 +2,9 @@ package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Typesetter.Companion.getSerializableState
-import brava.fightinwords.gameplay.Umpire.Companion.getSerializableState
-import brava.fightinwords.gameplay.scoring.EmployeeFactory.Companion.load
-import brava.fightinwords.gameplay.scoring.Scoreboard
-import brava.fightinwords.gameplay.scoring.Scoreboard.Companion.getSerializableState
+import brava.fightinwords.gameplay.hr.EmployeeFactory.Companion.load
+import brava.fightinwords.gameplay.scoring.Ledgerman
+import brava.fightinwords.gameplay.scoring.Ledgerman.Companion.getSerializableState
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
@@ -17,12 +16,16 @@ import brava.fightinwords.gameplay.wordlookup.WordDefinition
  */
 class GameInProgress(
     val gamePlan: GamePlan,
-    val umpire: Umpire,
     val typesetter: Typesetter,
-    val scoreboard: Scoreboard,
-    val onStatePossiblyChanged: () -> Unit = {}
+    val ledgerman: Ledgerman,
+    val onStatePossiblyChanged: () -> Unit = {},
 ) {
+    inline val umpire inline get() = ledgerman.umpire
+
     companion object {
+        inline val GamePlan.wordLengthRange
+            inline get() = minimumWordLength..letterPool.size
+
         fun startGame(
             gamePlan: GamePlan,
             wordPool: Sequence<WordDefinition>,
@@ -32,9 +35,12 @@ class GameInProgress(
 
             return GameInProgress(
                 gamePlan = gamePlan,
-                umpire = Umpire(wordPool, wordScorer),
                 typesetter = Typesetter(gamePlan.letterPool),
-                scoreboard = Scoreboard(gamePlan.unsubmittedWordVisibility),
+                ledgerman = Ledgerman(
+                    unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
+                    wordLengthRange = gamePlan.wordLengthRange,
+                    umpire = Umpire(wordPool, wordScorer)
+                ),
                 onStatePossiblyChanged = onStatePossiblyChanged
             )
         }
@@ -44,9 +50,8 @@ class GameInProgress(
         ): GameInProgress {
             return GameInProgress(
                 saveGameState.gamePlan,
-                Umpire.load(saveGameState),
                 Typesetter.load(saveGameState),
-                Scoreboard.load(saveGameState)
+                Ledgerman.load(saveGameState)
             )
         }
     }
@@ -55,17 +60,17 @@ class GameInProgress(
         return SaveGameState(
             gamePlan = gamePlan,
             typesetterState = typesetter.getSerializableState(),
-            umpireState = umpire.getSerializableState(),
-            scoreboardState = scoreboard.getSerializableState()
+            ledgermanState = ledgerman.getSerializableState()
         )
     }
 
-    fun submitGalley() {
+    fun submitGalley(): Umpire.SubmissionResult {
         val submittedWord = typesetter.submitAndClear()
         val submissionResult = umpire.submitWord(submittedWord)
         if (submissionResult.wordState is DefinedWordState) {
-            scoreboard.focusOnWord(submissionResult.wordState)
+            ledgerman.focusOnWord(submissionResult.wordState)
         }
         onStatePossiblyChanged()
+        return submissionResult
     }
 }

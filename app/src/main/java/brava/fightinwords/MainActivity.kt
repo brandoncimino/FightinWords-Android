@@ -5,15 +5,17 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.botlin.putJson
 import brava.fightinwords.botlin.readJson
-import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.GameInProgress
+import brava.fightinwords.gameplay.GameInProgress.Companion.wordLengthRange
 import brava.fightinwords.gameplay.GamePlan
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.LetterPool
@@ -23,14 +25,12 @@ import brava.fightinwords.gameplay.wordlookup.WordFileLookup
 import brava.fightinwords.gameplay.wordlookup.WordLookup
 import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers
 import brava.fightinwords.ui.GameScreen
-import brava.fightinwords.ui.GameUi
+import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.theme.FightinWordsTheme
-import brava.fightinwords.ui.typesetter.UiSettings
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
-    lateinit var gameUi: GameUi
-    lateinit var gameInProgress: GameInProgress
+    private val gameViewModel: GameViewModel by viewModels()
 
     val naspaWordList by lazy { WordFileLookup(assets.open("en/NWL2023_words.txt")) }
 
@@ -39,27 +39,24 @@ class MainActivity : ComponentActivity() {
 
         val saveGameState = savedInstanceState?.loadSaveGameState()
 
-        this.gameInProgress = when (saveGameState) {
-            null -> startFreshGame(GamePlan(naspaWordList.randomWordLetterPool()))
-            else -> GameInProgress.resumeGame(saveGameState)
-        }
+        gameViewModel.setGameInProgress(
+            when (saveGameState) {
+                null -> startFreshGame(GamePlan(naspaWordList.randomWordLetterPool()))
+                else -> GameInProgress.resumeGame(saveGameState)
+            }
+        )
 
-        gameUi = GameUi.create(gameInProgress, uiSettings = UiSettings())
+//        gameUi = GameUi.create(gameInProgress, uiSettings = UiSettings())
 
         enableEdgeToEdge()
         setContent {
             FightinWordsTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) {
                     GameScreen(
-                        typesetterState = gameUi.typesetterUi.state,
-                        typesetterButtons = gameUi.typesetterUi.buttons,
-                        focusedDefinition = gameUi.focusedDefinitionUi.state,
-                        modifier = Modifier.padding(it),
-                        onExpandDefinition = gameUi.focusedDefinitionUi.onExpand,
-                        onCollapseDefinition = gameUi.focusedDefinitionUi.onCollapse,
-                        visibleWords = gameUi.umpireUi.visibleWords,
-                        onWordClicked = { word -> if (word is DefinedWordState) gameUi.focusedDefinitionUi.onFocus(word) },
-                        uiSettings = gameUi.uiSettings
+                        gameViewModel.gameScreenState.collectAsState().value,
+                        gameViewModel.gameScreenInteractions,
+                        uiSettings = UiSettings(),
+                        modifier = Modifier.padding(it)
                     )
                 }
             }
@@ -67,7 +64,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        val gameState = gameInProgress.getSerializableState()
+        val gameState = gameViewModel.getSerializableState()
         outState.putJson(gameState)
 
         // The official example puts the call to the `super` method at the _end_ of the child: https://developer.android.com/guide/components/activities/activity-lifecycle#save-simple,-lightweight-ui-state-using-onsaveinstancestate
@@ -100,7 +97,8 @@ class MainActivity : ComponentActivity() {
             wordPool = WordLookupHelpers.parseConstructibleWords(
                 csvStream = assets.open(definitionsCsvAssetPath),
                 language = KnownLanguage.English,
-                letterPool = gamePlan.letterPool
+                letterPool = gamePlan.letterPool,
+                wordLengthRange = gamePlan.wordLengthRange
             ),
             wordScorer = wordScorer
         )

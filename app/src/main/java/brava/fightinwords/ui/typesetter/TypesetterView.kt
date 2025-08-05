@@ -13,16 +13,17 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.*
-import brava.fightinwords.ui.swaggins
+import brava.fightinwords.ui.UiSettings
+import brava.fightinwords.ui.UiSettingsPreviewProvider
 
 @Composable
 fun TypesetterView(
+    modifier: Modifier = Modifier,
+    uiSettings: UiSettings,
     typesetterState: TypesetterState,
     typesetterButtons: TypesetterButtons,
-    uiSettings: UiSettings,
-    modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(modifier) {
+    BoxWithConstraints(modifier = modifier) {
         val actualPersonalSpace: Dp
         val comfortablePersonalSpace = 360.dp / uiSettings.comfortableButtonsPerRow
 
@@ -35,16 +36,16 @@ fun TypesetterView(
         Column(horizontalAlignment = CenterHorizontally) {
             GalleyView(
                 typesetterState.galley,
-                uiSettings,
-                actualPersonalSpace,
-                typesetterButtons.onGalleyButtonClick
+                uiSettings = uiSettings,
+                letterTilePersonalSpace = actualPersonalSpace,
+                onClick = typesetterButtons.onGalleyButtonClick
             )
 
             LetterPoolView(
                 typesetterState.letterButtonStates,
-                uiSettings,
+                uiSettings = uiSettings,
                 personalSpace = actualPersonalSpace,
-                typesetterButtons.onLetterButtonClick
+                onLetterButtonClick = typesetterButtons.onLetterButtonClick
             )
 
             TypesetterButtonsView(
@@ -61,11 +62,7 @@ fun TypesetterView(
 fun TypesetterViewPreview(
     @PreviewParameter(UiSettingsPreviewProvider::class) uiSettings: UiSettings
 ) {
-    TypesetterView(
-        swaggins(),
-        TypesetterButtons({}, {}, {}, {}),
-        uiSettings
-    )
+
 }
 
 @Composable

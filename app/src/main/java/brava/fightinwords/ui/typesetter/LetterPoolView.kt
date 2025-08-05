@@ -10,6 +10,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.Slug
+import brava.fightinwords.ui.UiSettings
+import brava.fightinwords.ui.UiSettingsPreviewProvider
 import brava.fightinwords.ui.swaggins
 
 @Composable

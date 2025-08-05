@@ -1,4 +1,4 @@
-package brava.fightinwords.gameplay.scoring
+package brava.fightinwords.gameplay.hr
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.GamePlan

@@ -4,7 +4,7 @@ import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word
-import brava.fightinwords.gameplay.scoring.EmployeeFactory
+import brava.fightinwords.gameplay.hr.EmployeeFactory
 import kotlinx.serialization.Serializable
 import java.util.Comparator.comparing
 import kotlin.random.Random
@@ -76,6 +76,10 @@ class Typesetter(
             select(slug)
             assert(galley.contains(slug))
         }
+    }
+
+    fun toggleGalleyIndex(galleyIndex: Int) {
+        toggle(galley[galleyIndex])
     }
 
     fun toggleIndex(slugIndex: Int) = toggle(slugIndex)

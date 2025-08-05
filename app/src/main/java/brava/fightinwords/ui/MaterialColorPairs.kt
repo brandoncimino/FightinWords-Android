@@ -89,7 +89,7 @@ enum class MaterialColor {
     }
 
     companion object {
-        fun ColorScheme.get(materialColor: MaterialColor): Color = materialColor.from(this)
+        operator fun ColorScheme.get(materialColor: MaterialColor): Color = materialColor.from(this)
     }
 }
 

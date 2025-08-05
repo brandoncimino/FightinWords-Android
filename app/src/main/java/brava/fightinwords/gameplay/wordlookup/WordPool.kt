@@ -1,9 +1,6 @@
 package brava.fightinwords.gameplay.wordlookup
 
-import brava.fightinwords.gameplay.KnownLanguage
-import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.Word
-import java.io.InputStream
 import java.util.function.IntFunction
 
 
@@ -17,13 +14,5 @@ data class WordPool(
     override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?> {
         @Suppress("DEPRECATION")
         return super.toArray(generator)
-    }
-
-    companion object {
-        fun fromDefinitionFile(letterPool: LetterPool, csvStream: InputStream): WordPool {
-            return WordPool(
-                WordLookupHelpers.parseConstructibleWords(csvStream, KnownLanguage.English, letterPool)
-                    .associateBy { it.word })
-        }
     }
 }

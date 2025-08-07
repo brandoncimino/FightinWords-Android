@@ -6,7 +6,6 @@ import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.GameInProgress
 import brava.fightinwords.gameplay.Umpire
 import brava.fightinwords.gameplay.WordState
-import brava.fightinwords.gameplay.scoring.Ledgerman
 import brava.fightinwords.gameplay.scoring.WordFilter
 import brava.fightinwords.ui.GameScreenInteractions
 import brava.fightinwords.ui.GameScreenState
@@ -47,10 +46,9 @@ class GameViewModel : ViewModel() {
 
     fun clickFilterButton(
         wordFilter: WordFilter.State,
-        filterSelectStyle: Ledgerman.FilterSelectStyle = Ledgerman.FilterSelectStyle.MultiSelect,
     ) {
         blog { "Clicking the filter button: $wordFilter" }
-        gameInProgress.ledgerman.selectFilter(wordFilter, filterSelectStyle)
+        gameInProgress.ledgerman.toggleWordFilter(wordFilter.wordFilter)
         refresh()
     }
 

@@ -2,9 +2,9 @@ package brava.fightinwords.ui.typesetter
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -38,7 +38,8 @@ fun LetterTile(
     letterCase: LetterCase = LetterCase.Uppercase,
     personalSpace: Dp = 55.dp,
     flavor: LetterTileFlavor,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    buttonEnabled: Boolean = true,
 ) {
     val tileShape = MaterialTheme.shapes.extraSmall
     val innerSpace = personalSpace * .05f
@@ -49,7 +50,7 @@ fun LetterTile(
     Box(
         modifier = Modifier.size(personalSpace)
     ) {
-        TextButton(
+        ElevatedButton(
             modifier = Modifier
                 .aspectRatio(1f)
                 .padding(innerSpace),
@@ -57,6 +58,7 @@ fun LetterTile(
             contentPadding = PaddingValues(0.dp),
             colors = flavor.buttonColors(),
             shape = tileShape,
+            enabled = buttonEnabled
         ) {
             Text(
                 text = letterCase.applyTo(letter),

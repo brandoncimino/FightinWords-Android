@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 data class GamePlan(
     val letterPool: LetterPool,
     val unsubmittedWordVisibility: UnsubmittedWordVisibility = UnsubmittedWordVisibility.Standard,
-    val minimumWordLength: Int = 4,
+    val minimumWordLength: Int = 3,
     val wordLanguage: KnownLanguage = KnownLanguage.English,
     val scoreboardSorting: Ledgerman.WordSorting = Ledgerman.WordSorting.LengthFirst,
 ) {

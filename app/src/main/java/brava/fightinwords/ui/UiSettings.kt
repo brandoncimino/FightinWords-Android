@@ -7,13 +7,13 @@ data class UiSettings(
     val maxButtonsPerRow: Int? = null,
     val comfortableButtonsPerRow: Int = 6,
     val letterButtonCase: LetterCase = LetterCase.Uppercase,
-    val rejectionDisplay: RejectionDisplay = RejectionDisplay.Include,
+    val rejectionDisplay: RejectionDisplay = RejectionDisplay.Exclude,
     val sectionOrder: List<UiSection> = UiSection.entries,
 ) {
 
     enum class RejectionDisplay {
+        Exclude,
         Include,
-        Exclude
     }
 
     enum class UiSection {

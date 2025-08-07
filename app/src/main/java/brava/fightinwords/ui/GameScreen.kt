@@ -18,6 +18,7 @@ import brava.fightinwords.ui.submissions.DefinitionBox
 import brava.fightinwords.ui.submissions.LedgermanWordPool
 import brava.fightinwords.ui.submissions.ScoreboardWordFilters
 import brava.fightinwords.ui.typesetter.TypesetterView
+import brava.fightinwords.ui.typesetter.snapshot
 
 @Composable
 fun GameScreen(
@@ -130,6 +131,14 @@ fun GameScreenPreview() {
 //            UiSettings.UiSection.Definition,
 //            UiSettings.UiSection.Definition,
 //        )
+    )
+
+    GameScreen(
+        gameScreenState = GameScreenState.InGame(
+            typesetterState = typesetter.snapshot(),
+            ledgermanState = ledgermanUiState,
+        ),
+        gameScreenInteractions = PreviewHelpers.gameScreenInteractions
     )
 
 //    GameScreen(

@@ -2,8 +2,10 @@ package brava.fightinwords.ui.submissions
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -24,16 +26,23 @@ fun LedgermanWordPool(
     visibleWords: List<WordState>,
     onFocusWord: (WordState) -> Unit,
 ) {
-    WordPoolView(
-        visibleWords = visibleWords,
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        onWordClicked = {
-            if (it is DefinedWordState) {
-                onFocusWord(it)
+    if (visibleWords.isEmpty()) {
+        Text(
+            text = "All words have been filtered out.",
+            fontStyle = FontStyle.Italic
+        )
+    } else {
+        WordPoolView(
+            visibleWords = visibleWords,
+            modifier = modifier,
+            horizontalArrangement = Arrangement.Center,
+            onWordClicked = {
+                if (it is DefinedWordState) {
+                    onFocusWord(it)
+                }
             }
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -112,6 +121,8 @@ fun WordPoolWord(
                 },
                 flavor = flavor,
                 personalSpace = letterPersonalSpace,
+                onClick = { onClick(wordState) },
+                buttonEnabled = wordState is Accepted
             )
         }
     }

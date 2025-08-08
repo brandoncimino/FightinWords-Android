@@ -11,5 +11,4 @@ data class GamePlan(
     val minimumWordLength: Int = 3,
     val wordLanguage: KnownLanguage = KnownLanguage.English,
     val scoreboardSorting: Ledgerman.WordSorting = Ledgerman.WordSorting.LengthFirst,
-) {
-}
+)

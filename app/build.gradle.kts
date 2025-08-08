@@ -12,6 +12,7 @@ android {
     defaultConfig {
         applicationId = "brava.fightinwords"
         minSdk = 24
+        //noinspection EditedTargetSdkVersion
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"

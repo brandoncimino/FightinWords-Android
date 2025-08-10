@@ -56,7 +56,8 @@ inline fun <reified T : Any> Bundle.putJson(obj: T, key: String? = T::class.qual
     putString(key, json)
 }
 
-inline fun <reified T : Any> Bundle.readJson(): T? = readJson<T>(T::class.qualifiedName)
+inline fun <reified T : Any> Bundle.readJson(jsonThingy: Json = Json): T? =
+    readJson<T>(T::class.qualifiedName, jsonThingy)
 
 inline fun <reified T : Any> Bundle.readJson(key: String? = T::class.qualifiedName, jsonThingy: Json = Json): T? {
     val json = this.getString(key)

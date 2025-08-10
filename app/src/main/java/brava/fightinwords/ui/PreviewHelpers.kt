@@ -26,8 +26,24 @@ object PreviewHelpers {
         false
     )
 
+    val nuts = WordDefinition(
+        "nuts".toWord(),
+        KnownLanguage.English,
+        "noun",
+        "Plural of nut.",
+        true
+    )
+
     val longDefinition =
         deez.copy(definition = "This is a really long version of the original definition for 'deez', which was not quite this long, but now is longer than it once was.")
+
+    val redactedDefinition =
+        longDefinition.copy(
+            definition = longDefinition.definition.replace(
+                Regex("[a-zA-Z]"),
+                "█"
+            )
+        )
 
     @Composable
     fun Log(

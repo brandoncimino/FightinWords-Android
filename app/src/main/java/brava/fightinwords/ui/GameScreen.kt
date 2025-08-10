@@ -30,8 +30,6 @@ fun GameScreen(
     when (gameScreenState) {
         is GameScreenState.Loading -> Text("Loading...")
         is GameScreenState.InGame  -> {
-
-
             Column(
                 verticalArrangement = Arrangement.Bottom,
                 horizontalAlignment = Alignment.CenterHorizontally,

@@ -1,17 +1,13 @@
 package brava.fightinwords.ui.submissions
 
-import android.util.Log
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -22,14 +18,15 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastJoinToString
-import androidx.compose.ui.window.Dialog
-import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.Accepted
 import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.Unplayed
+import brava.fightinwords.gameplay.isBonusWord
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
 import brava.fightinwords.ui.PreviewHelpers
 import brava.fightinwords.ui.PreviewHelpers.deez
+import brava.fightinwords.ui.PreviewHelpers.nuts
+import brava.fightinwords.ui.theme.GameIcons
 import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,11 +35,9 @@ fun DefinitionBox(
     definedWord: DefinedWordState?,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(10.dp),
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
-    var poppedUp = remember { false }
-
-    Card(
+    ElevatedCard(
         modifier = modifier,
         onClick = onClick
     ) {
@@ -55,18 +50,6 @@ fun DefinitionBox(
                 )
             }
         }
-
-        if (poppedUp && definedWord != null) {
-            Dialog(
-                onDismissRequest = { blog(Log.VERBOSE) { "popping down!" }; poppedUp = false }
-            ) {
-                Card {
-                    DefinitionView(
-                        definedWord
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -77,43 +60,17 @@ fun DefinitionView(
     wordStyle: TextStyle = MaterialTheme.typography.headlineLarge,
     subtitleStyle: TextStyle = MaterialTheme.typography.bodyLarge
         .copy(fontStyle = FontStyle.Italic),
-    definitionStyle: TextStyle = MaterialTheme.typography.bodyLarge
+    definitionStyle: TextStyle = MaterialTheme.typography.bodyLarge,
 ) {
-    Card(modifier = modifier) {
-        Row(
-            verticalAlignment = Alignment.Bottom
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = buildAnnotatedString {
-                    this.append(definedWord.word.toString() + " ")
+            DefinitionHeadline(definedWord, wordStyle, subtitleStyle)
 
-                    val parts = sequence {
-                        val partOfSpeech = definedWord.wordDefinition.partOfSpeech?.lowercase()
-                        if (partOfSpeech != null) {
-                            yield(partOfSpeech)
-                        }
-
-                        if (definedWord is Accepted) {
-                            yield("${definedWord.points} points")
-                        }
-                    }.toList().toList()
-
-                    if (parts.isNotEmpty()) {
-                        withStyle(
-                            subtitleStyle.toSpanStyle()
-                        ) {
-                            this.append(
-                                parts.fastJoinToString(
-                                    separator = ", ",
-                                    prefix = "(",
-                                    postfix = ")"
-                                )
-                            )
-                        }
-                    }
-                },
-                style = wordStyle
-            )
+            if (definedWord.isBonusWord) {
+                BonusWordIcon(Modifier.align(Alignment.TopEnd))
+            }
         }
 
         Text(
@@ -125,22 +82,85 @@ fun DefinitionView(
     }
 }
 
-class WordDefinitionPreviews : PreviewParameterProvider<DefinedWordState> {
+@Composable
+private fun DefinitionHeadline(
+    definedWord: DefinedWordState,
+    wordStyle: TextStyle,
+    subtitleStyle: TextStyle,
+) {
+    Text(
+        text = buildAnnotatedString {
+            this.append(definedWord.word.toString() + " ")
 
+            val parts = sequence {
+                val partOfSpeech = definedWord.wordDefinition.partOfSpeech?.lowercase()
+                if (partOfSpeech != null) {
+                    yield(partOfSpeech)
+                }
+
+                if (definedWord is Accepted) {
+                    yield("${definedWord.points} points")
+                }
+            }.toList().toList()
+
+            if (parts.isNotEmpty()) {
+                withStyle(
+                    subtitleStyle.toSpanStyle()
+                ) {
+                    this.append(
+                        parts.fastJoinToString(
+                            separator = ", ",
+                            prefix = "(",
+                            postfix = ")"
+                        )
+                    )
+                }
+            }
+        },
+        style = wordStyle
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BonusWordIcon(modifier: Modifier = Modifier, painter: Painter = painterResource(GameIcons.BonusIcon)) {
+    Box(modifier) {
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+            tooltip = {
+                PlainTooltip {
+                    Text("Bonus Word")
+                }
+            },
+            state = rememberTooltipState(),
+            modifier = modifier
+        ) {
+            Icon(
+                painter = painter,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+            )
+        }
+    }
+}
+
+class WordDefinitionPreviews : PreviewParameterProvider<DefinedWordState> {
     override val values: Sequence<DefinedWordState>
         get() = sequenceOf(
             Accepted(deez, 99),
-            Unplayed(PreviewHelpers.longDefinition),
+            Unplayed(nuts),
+            Unplayed(PreviewHelpers.longDefinition.copy(isNaspaWord = true)),
             Unplayed(
                 Json.decodeFromString<WordDefinition>(Json.encodeToString(deez))
-            )
+            ),
+            Accepted(PreviewHelpers.redactedDefinition, 21)
         )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DefinitionViewPreview(
-    @PreviewParameter(WordDefinitionPreviews::class) definedWordState: DefinedWordState
+    @PreviewParameter(WordDefinitionPreviews::class) definedWordState: DefinedWordState,
 ) {
     DefinitionBox(
         definedWordState

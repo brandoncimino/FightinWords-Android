@@ -7,6 +7,7 @@ import brava.fightinwords.gameplay.GamePlan
 import brava.fightinwords.gameplay.WordState
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import brava.fightinwords.gameplay.scoring.Ledgerman.Companion.getLengthFilterState
+import kotlinx.serialization.Serializable
 
 sealed interface WordFilterManager {
     fun filter(word: WordState): Boolean
@@ -17,6 +18,8 @@ sealed interface WordFilterManager {
     fun clearFilters()
 
     fun snapshot(): SerializableState
+
+    @Serializable
     sealed interface SerializableState
 
     companion object : EmployeeFactory<WordFilterManager, SerializableState> {
@@ -29,8 +32,8 @@ sealed interface WordFilterManager {
             gamePlan: GamePlan,
         ): WordFilterManager {
             return when (state) {
-                is MultiSelectWordFilters.SerializableState  -> MultiSelectWordFilters(state.lengthFilters)
-                is SingleSelectWordFilters.SerializableState -> SingleSelectWordFilters(state.selected)
+                is MultiSelectWordFilters.MultiSelectSerializableState   -> MultiSelectWordFilters(state.lengthFilters)
+                is SingleSelectWordFilters.SingleSelectSerializableState -> SingleSelectWordFilters(state.selected)
             }
         }
 
@@ -73,22 +76,22 @@ class SingleSelectWordFilters(private var selected: WordFilter? = null) : WordFi
         selected = null
     }
 
-    @JvmInline
-    value class SerializableState(val selected: WordFilter?) : WordFilterManager.SerializableState
+    @Serializable
+    class SingleSelectSerializableState(val selected: WordFilter?) : WordFilterManager.SerializableState
 
-    override fun snapshot() = SerializableState(selected)
+    override fun snapshot() = SingleSelectSerializableState(selected)
 
-    companion object : EmployeeFactory<SingleSelectWordFilters, SerializableState> {
-        override fun SingleSelectWordFilters.getSerializableState(): SerializableState = snapshot()
+    companion object : EmployeeFactory<SingleSelectWordFilters, SingleSelectSerializableState> {
+        override fun SingleSelectWordFilters.getSerializableState(): SingleSelectSerializableState = snapshot()
 
         override fun fromSerializableState(
-            state: SerializableState,
+            state: SingleSelectSerializableState,
             gamePlan: GamePlan,
         ): SingleSelectWordFilters {
             return SingleSelectWordFilters(state.selected)
         }
 
-        override fun SaveGameState.getEmployeeState(): SerializableState {
+        override fun SaveGameState.getEmployeeState(): SingleSelectSerializableState {
             TODO("Not yet implemented")
         }
 
@@ -140,8 +143,8 @@ class MultiSelectWordFilters(
         lengthFilters = TinyFlags()
     }
 
-    @JvmInline
-    value class SerializableState(val lengthFilters: TinyFlags) : WordFilterManager.SerializableState
+    @Serializable
+    class MultiSelectSerializableState(val lengthFilters: TinyFlags) : WordFilterManager.SerializableState
 
-    override fun snapshot() = SerializableState(lengthFilters)
+    override fun snapshot() = MultiSelectSerializableState(lengthFilters)
 }

@@ -9,7 +9,13 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.botlin.putJson
@@ -27,10 +33,12 @@ import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers
 import brava.fightinwords.ui.GameScreen
 import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.theme.FightinWordsTheme
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     private val gameViewModel: GameViewModel by viewModels()
+    private val snackbarHostState = SnackbarHostState()
 
     val naspaWordList by lazy { WordFileLookup(assets.open("en/NWL2023_words.txt")) }
 
@@ -46,17 +54,42 @@ class MainActivity : ComponentActivity() {
             }
         )
 
-//        gameUi = GameUi.create(gameInProgress, uiSettings = UiSettings())
+
 
         enableEdgeToEdge()
         setContent {
+            SubmissionSnackbar()
+
             FightinWordsTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) {
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                ) {
                     GameScreen(
                         gameViewModel.gameScreenState.collectAsState().value,
                         gameViewModel.gameScreenInteractions,
                         uiSettings = UiSettings(),
                         modifier = Modifier.padding(it)
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun SubmissionSnackbar(enabled: Boolean = false) {
+        if (!enabled) {
+            return
+        }
+
+        val scope = rememberCoroutineScope()
+        LaunchedEffect(Unit) {
+            gameViewModel.submissionResults.collect { submissionResult ->
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "${submissionResult.wordState.javaClass.simpleName}",
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Short
                     )
                 }
             }
@@ -76,7 +109,12 @@ class MainActivity : ComponentActivity() {
 
         return runCatching { this.readJson<SaveGameState>() }
             .getOrElse {
-                blog(Log.ERROR) { "Unable to load a valid ${SaveGameState::class.simpleName} from the savedInstanceState!" }
+                blog(Log.ERROR) {
+                    """Unable to load a valid ${SaveGameState::class.simpleName} from the savedInstanceState due to:
+```
+${it.stackTraceToString()}
+```"""
+                }
                 return@getOrElse null
             }
     }

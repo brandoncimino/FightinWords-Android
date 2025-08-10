@@ -29,7 +29,8 @@ fun LedgermanWordPool(
     if (visibleWords.isEmpty()) {
         Text(
             text = "All words have been filtered out.",
-            fontStyle = FontStyle.Italic
+            fontStyle = FontStyle.Italic,
+            modifier = modifier
         )
     } else {
         WordPoolView(

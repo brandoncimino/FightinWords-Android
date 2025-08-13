@@ -100,3 +100,19 @@ inline fun <O> (() -> O).andAlso(crossinline sideAction: (O) -> Any): () -> O {
         firstResult
     }
 }
+
+
+fun <T : Comparable<T>> T.constrain(
+    min: T?,
+    max: T?,
+): T {
+    if (min != null && min > this) {
+        return min
+    }
+
+    if (max != null && max < this) {
+        return max
+    }
+
+    return this
+}

@@ -5,10 +5,21 @@ import android.util.Log
 import kotlinx.serialization.json.Json
 import kotlin.reflect.KProperty
 
-inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String = javaClass.simpleName, message: () -> Any?) {
+inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String? = javaClass.simpleName, message: () -> Any?) {
     if (Log.isLoggable(tag, level)) {
         Log.println(level, tag, message().toString())
     }
+}
+
+inline fun <reified T> T.andBlog(
+    level: Int = Log.INFO,
+    message: (T) -> Any? = { it },
+): T {
+    val self = this
+    Unit.blog(level = level, tag = T::class.simpleName) {
+        message(self)
+    }
+    return self
 }
 
 class BlogTimeline<PROP>(

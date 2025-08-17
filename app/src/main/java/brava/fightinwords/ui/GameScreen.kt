@@ -39,8 +39,8 @@ fun GameScreen(
                     when (section) {
                         UiSettings.UiSection.Scoreboard    -> {
                             LedgermanWordPool(
-                                modifier = Modifier.weight(1f, fill = true),
                                 visibleWords = gameScreenState.ledgermanState.visibleWords,
+                                modifier = Modifier.weight(1f, fill = true),
                                 onFocusWord = gameScreenInteractions.onFocusWord,
                             )
                         }

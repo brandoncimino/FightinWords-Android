@@ -16,6 +16,12 @@ import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.LetterCase
 import brava.fightinwords.ui.MaterialColorPair
 
+object LetterTile {
+    val Big = 55.dp
+    val Medium = 40.dp
+    val Small = 22.dp
+}
+
 enum class LetterTileFlavor(
     val materialColorPair: MaterialColorPair
 ) {
@@ -36,7 +42,7 @@ enum class LetterTileFlavor(
 fun LetterTile(
     letter: String,
     letterCase: LetterCase = LetterCase.Uppercase,
-    personalSpace: Dp = 55.dp,
+    personalSpace: Dp = LetterTile.Big,
     flavor: LetterTileFlavor,
     onClick: () -> Unit = {},
     buttonEnabled: Boolean = true,
@@ -48,7 +54,7 @@ fun LetterTile(
     val personalFont = with(LocalDensity.current) { (tileSpace).toSp() }
 
     Box(
-        modifier = Modifier.size(personalSpace)
+        modifier = Modifier.requiredSize(personalSpace)
     ) {
         ElevatedButton(
             modifier = Modifier

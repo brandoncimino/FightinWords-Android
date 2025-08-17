@@ -31,6 +31,8 @@ object JetpackBoosters {
             shrunk = bigShrinker(shrunk)
         }
 
+        blog { "Shrunk $maxValue down to: $shrunk; growing..." }
+
         if (shrinkCount == 0) {
             blog { "maxValue $maxValue already fits!" }
             return shrunk
@@ -47,6 +49,8 @@ object JetpackBoosters {
             shrunk = grown
             grown = littleGrower(grown)
         }
+
+        blog { "Grown value $grown does NOT fit; returning previous value: $shrunk" }
 
         return shrunk
     }

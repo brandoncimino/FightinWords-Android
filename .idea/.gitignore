@@ -1,0 +1,16 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Environment-dependent path to Maven home directory
+/mavenHomeManager.xml
+
+# Android stuff that isn't covered by the standard Jetbrains .gitignore
+AndroidProjectSystem.xml
+androidTestResultsUserPreferences.xml
+/assetWizardSettings.xml
+/androidTestResultsUserPreferences.xml
+/deploymentTargetSelector.xml
+/deviceManager.xml
+/checkstyle-idea.xml

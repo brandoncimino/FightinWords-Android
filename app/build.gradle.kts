@@ -51,6 +51,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("com.google.guava:guava:33.4.8-android")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("androidx.compose.material3.adaptive:adaptive-android:1.1.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.assertj:assertj-core:4.0.0-M1")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")

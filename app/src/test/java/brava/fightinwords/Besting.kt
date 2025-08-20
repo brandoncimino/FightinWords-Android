@@ -30,3 +30,14 @@ object Besting {
 
     fun <T> T.ass(nickname: String) = Assertions.assertThat(this).`as`(nickname)
 }
+
+data class Nicknamed<T>(val value: T, val nickname: String) {
+    companion object {
+        inline fun <reified T> T.nicknamed(nicknamer: (T) -> Any?) =
+            Nicknamed(this, "[${T::class.simpleName}]${nicknamer(this)}")
+    }
+
+    override fun toString(): String {
+        return nickname
+    }
+}

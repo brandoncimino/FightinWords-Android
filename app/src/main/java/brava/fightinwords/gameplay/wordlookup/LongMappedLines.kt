@@ -1,5 +1,7 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.collection.LongLongMap
 import androidx.collection.buildLongLongMap
 import brava.fightinwords.botlin.TinyRange
@@ -16,6 +18,7 @@ class LongMappedLines(
     private val bytes: MappedByteBuffer,
     private val wordDefinitionRanges: LongLongMap,
 ) {
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun getLine(key: Long): ByteBuffer? {
         val packedRange = wordDefinitionRanges.getOrDefault(key, TinyRange.empty.packed)
         val tinyRange = TinyRange(packedRange)

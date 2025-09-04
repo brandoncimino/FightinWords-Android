@@ -1,9 +1,10 @@
 package brava.fightinwords.botlin
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import java.nio.ByteBuffer
 
-private const val lf = '\n'.code.toByte()
-
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 internal inline fun ByteBuffer.forEachLine(
     action: (ByteBuffer) -> Unit,
 ) {
@@ -20,7 +21,7 @@ inline fun ByteBuffer.forEachLineRange(
     var pos = 0
     while (pos < limit()) {
         val current = get(pos)
-        if (current == lf) {
+        if (current == '\n'.code.toByte()) {
             action(lineStart, pos - 1)
             lineStart = pos + 1
         }

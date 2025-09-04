@@ -14,3 +14,5 @@ androidTestResultsUserPreferences.xml
 /deploymentTargetSelector.xml
 /deviceManager.xml
 /checkstyle-idea.xml
+/migrations.xml
+/caches

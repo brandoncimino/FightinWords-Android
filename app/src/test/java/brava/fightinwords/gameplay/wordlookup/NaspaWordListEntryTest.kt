@@ -2,11 +2,13 @@ package brava.fightinwords.gameplay.wordlookup
 
 import org.assertj.core.api.Assertions
 import org.junit.Test
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 
 class NaspaWordListEntryTest {
     data class Data(
-        val raw: String,
+        val rawString: String,
         val word: String,
         val definition: String,
         val partOfSpeech: String,
@@ -65,6 +67,15 @@ class NaspaWordListEntryTest {
             "capable of being {summoned=v}",
             "adj"
         )
+
+        fun ByteBuffer.toUtf8String(): String {
+            val charBuffer = StandardCharsets.UTF_8.decode(this)
+            return charBuffer.toString()
+        }
+
+        fun String.utf8Bytes(): ByteBuffer {
+            return ByteBuffer.wrap(this.encodeToByteArray())
+        }
     }
 
     @Test
@@ -83,22 +94,22 @@ class NaspaWordListEntryTest {
     }
 
     fun parseTest(data: Data) {
-        val parsed = NaspaWordListEntry.parse(data.raw)
+        val parsed = NaspaWordListEntry.parse(data.rawString.utf8Bytes())
 
         Assertions.assertThat(parsed)
             .satisfies(
                 {
-                    Assertions.assertThat(it.word)
+                    Assertions.assertThat(it.word.toUtf8String())
                         .describedAs { "word" }
                         .isEqualToIgnoringCase(data.word)
                 },
                 {
-                    Assertions.assertThat(it.partOfSpeech)
+                    Assertions.assertThat(it.partOfSpeech.toUtf8String())
                         .describedAs { "partOfSpeech" }
                         .isEqualToIgnoringCase(data.partOfSpeech)
                 },
                 {
-                    Assertions.assertThat(it.definition)
+                    Assertions.assertThat(it.definition.toUtf8String())
                         .describedAs { "definition" }
                         .isEqualToIgnoringCase(data.definition)
                 }

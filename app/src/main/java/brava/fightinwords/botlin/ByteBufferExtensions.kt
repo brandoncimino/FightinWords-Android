@@ -51,11 +51,56 @@ fun ByteBuffer.toUft8String() : String = utf8().toString()
 
 private val threadLocalUtf8Decoder : ThreadLocal<CharsetDecoder> = ThreadLocal.withInitial { StandardCharsets.UTF_8.newDecoder() }
 inline fun ByteBuffer.indexOf(predicate: (Byte) -> Boolean, startIndex: Int = 0) : Int {
-    for(i in startIndex..limit()){
+    for(i in startIndex until limit()){
         if(predicate(get(i))){
             return i
         }
     }
 
     return -1
+}
+
+fun ByteBuffer.indexOf(byte: Byte, startIndex: Int = 0) : Int {
+    return indexOf({it == byte}, startIndex)
+}
+
+fun ByteBuffer.findWrappedRange(open: Byte, close: Byte, startIndex: Int = 0): TinyRange {
+    val startByteIndex = indexOf(open, startIndex)
+
+    if(startByteIndex < 0){
+        return TinyRange.empty
+    }
+
+    val end = indexOf(close, startIndex)
+
+    if(end < 0){
+        return TinyRange.empty
+    }
+
+    return TinyRange(startByteIndex, end)
+}
+
+fun ByteBuffer.forEachWrappedRange(
+    open: Byte,
+    close: Byte,
+    startIndex: Int = 0,
+    action: (start: Int, endInclusive: Int) -> Unit,
+) {
+    var pos = startIndex
+    while(pos < limit()){
+        val start = indexOf(open, pos)
+
+        if(start < 0){
+            return
+        }
+
+        val end = indexOf(close, start + 1)
+
+        if(end < 0){
+            return
+        }
+
+        action(start, end)
+        pos = end+1
+    }
 }

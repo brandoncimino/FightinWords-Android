@@ -2,6 +2,7 @@ package brava.fightinwords.botlin
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import com.google.common.base.Ascii
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CharsetDecoder
@@ -24,7 +25,7 @@ inline fun ByteBuffer.forEachLineRange(
     var pos = 0
     while (pos < limit()) {
         val current = get(pos)
-        if (current == '\n'.code.toByte()) {
+        if (current == Ascii.LF) {
             action(lineStart, pos - 1)
             lineStart = pos + 1
         }
@@ -45,6 +46,8 @@ fun ByteBuffer.utf8() : CharBuffer {
     //  If I really wanted to waste my time on the tiniest optimization, I could maybe use a pool of decoders and rent them, but I mean...come on.
     return threadLocalUtf8Decoder.get()!!.decode(this)
 }
+
+fun ByteBuffer.toUft8String() : String = utf8().toString()
 
 private val threadLocalUtf8Decoder : ThreadLocal<CharsetDecoder> = ThreadLocal.withInitial { StandardCharsets.UTF_8.newDecoder() }
 inline fun ByteBuffer.indexOf(predicate: (Byte) -> Boolean, startIndex: Int = 0) : Int {

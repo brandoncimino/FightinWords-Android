@@ -58,7 +58,7 @@ class Typesetter(
         val sortState = SortState(letterSorting, descending)
         currentPool = currentPool.sortedWith(
             comparing(
-                { it.letter.character },
+                { it.letter },
                 when (sortState.isDescending) {
                     true -> sortState.letterSorting.reversed()
                     false -> sortState.letterSorting

@@ -21,6 +21,13 @@ sealed class MemoryMappedDefinitionLookup(
         return parseLine(line)
     }
 
+    /**
+     * Checks for the presence of [tinyWord] without invoking [parseLine].
+     */
+    fun containsWord(tinyWord: TinyWord): Boolean {
+        return entries.containsKey(tinyWord.packed)
+    }
+
     protected abstract fun parseLine(
         line: ByteBuffer,
     ): WordDefinition

@@ -31,6 +31,14 @@ class LongMappedLines(
         }
     }
 
+    /**
+     * Checks for the presence of [key] in my [wordDefinitionRanges].
+     * Analogous to [Map.containsKey].
+     *
+     * While the performance benefit of this over [getLine] is probably insignificant, this method has the benefit of not requiring [Build.VERSION_CODES.UPSIDE_DOWN_CAKE].
+     */
+    fun containsKey(key: Long) : Boolean = wordDefinitionRanges.containsKey(key)
+
     companion object {
         inline fun create(
             file: File,

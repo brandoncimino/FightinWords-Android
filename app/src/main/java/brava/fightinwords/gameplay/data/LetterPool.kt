@@ -5,6 +5,7 @@ import java.util.function.IntFunction
 
 @Serializable
 data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
+    constructor(letters: Collection<Letter>) : this(letters.toList())
     @Suppress("unused")
     fun canConstruct(word: Collection<Letter>): Boolean {
         if (word.size > size) {
@@ -12,14 +13,14 @@ data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
         }
 
         return canConstructInternal(
-            word.asSequence().map { it.character },
+            word.asSequence().map { it.codePoint.toChar() /*TODO: Properly implement this to work with `Letter`s */ },
             CharArray(size)
         ) >= 0
     }
 
     internal fun copyTo(buffer: CharArray): CharArray {
         for (i in 0 until buffer.size) {
-            buffer[i] = this[i].character
+            buffer[i] = this[i].codePoint.toChar() /* TODO: Properly implement this to work with `Letter`s */
         }
         return buffer
     }

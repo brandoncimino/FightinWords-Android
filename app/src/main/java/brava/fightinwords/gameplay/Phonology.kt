@@ -1,5 +1,8 @@
 package brava.fightinwords.gameplay
 
+import brava.fightinwords.gameplay.data.Letter
+import brava.fightinwords.gameplay.data.TinyWord
+
 enum class Phonology {
     Vowel,
     SemiVowel,
@@ -22,6 +25,15 @@ enum class Phonology {
                 }
 
                 return Consonant;
+            }
+
+        val Letter.englishPhonology: Phonology
+            get() {
+                return when (codePoint) {
+                    'a'.code, 'e'.code, 'i'.code, 'o'.code, 'u'.code -> Vowel
+                    'y'.code                                         -> SemiVowel
+                    else                                             -> Consonant
+                }
             }
     }
 }

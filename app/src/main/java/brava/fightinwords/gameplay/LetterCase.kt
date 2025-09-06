@@ -9,7 +9,7 @@ enum class LetterCase {
     Uppercase;
 
     fun applyTo(letter: Letter, locale: Locale = Locale.ROOT): String {
-        return applyTo(letter.character, locale)
+        return applyTo(letter.codePoint, locale)
     }
 
     fun applyTo(string: String, locale: Locale = Locale.ROOT): String {
@@ -23,6 +23,13 @@ enum class LetterCase {
         return when (this) {
             Uppercase -> char.uppercase(locale)
             Lowercase -> char.lowercase()
-        };
+        }
+    }
+
+    fun applyTo(codePoint: Int, locale: Locale = Locale.ROOT) : String {
+        return when(this){
+            Uppercase -> StringBuilder().appendCodePoint(codePoint).toString().uppercase(locale)
+            Lowercase -> StringBuilder().appendCodePoint(codePoint).toString().lowercase(locale)
+        }
     }
 }

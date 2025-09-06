@@ -50,8 +50,14 @@ fun ByteBuffer.utf8() : CharBuffer {
 fun ByteBuffer.toUft8String() : String = utf8().toString()
 
 private val threadLocalUtf8Decoder : ThreadLocal<CharsetDecoder> = ThreadLocal.withInitial { StandardCharsets.UTF_8.newDecoder() }
-inline fun ByteBuffer.indexOf(predicate: (Byte) -> Boolean, startIndex: Int = 0) : Int {
-    for(i in startIndex until limit()){
+
+/**
+ * @see kotlin.collections.lastIndex
+ */
+val ByteBuffer.lastIndex get() = limit() - 1
+
+inline fun ByteBuffer.indexOf(predicate: (Byte) -> Boolean, startIndex: Int = 0, endInclusive: Int = lastIndex) : Int {
+    for(i in startIndex..endInclusive){
         if(predicate(get(i))){
             return i
         }
@@ -60,18 +66,18 @@ inline fun ByteBuffer.indexOf(predicate: (Byte) -> Boolean, startIndex: Int = 0)
     return -1
 }
 
-fun ByteBuffer.indexOf(byte: Byte, startIndex: Int = 0) : Int {
-    return indexOf({it == byte}, startIndex)
+fun ByteBuffer.indexOf(byte: Byte, startIndex: Int = 0, endInclusive: Int = lastIndex) : Int {
+    return indexOf({it == byte}, startIndex, endInclusive)
 }
 
-fun ByteBuffer.findWrappedRange(open: Byte, close: Byte, startIndex: Int = 0): TinyRange {
-    val startByteIndex = indexOf(open, startIndex)
+fun ByteBuffer.findWrappedRange(open: Byte, close: Byte, startIndex: Int = 0, endInclusive: Int = lastIndex): TinyRange {
+    val startByteIndex = indexOf(open, startIndex, lastIndex)
 
     if(startByteIndex < 0){
         return TinyRange.empty
     }
 
-    val end = indexOf(close, startIndex)
+    val end = indexOf(close, startByteIndex+1, lastIndex)
 
     if(end < 0){
         return TinyRange.empty

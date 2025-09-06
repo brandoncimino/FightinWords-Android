@@ -6,13 +6,16 @@ import kotlin.math.min
 
 /**
  * A collection of [Letter]s.
+ *
+ * TODO: Make [TinyWord] more interchangeable with [Word]. Options include:
+ *   - Make [Word] into a `sealed interface`
  */
 @Serializable
 @JvmInline
 value class Word(val letters: List<Letter>) : List<Letter> by letters, Comparable<Word> {
     private class LetterList(val stringValue: String) : AbstractList<Letter>() {
         override val size: Int = stringValue.length
-        override fun get(index: Int): Letter = Letter(stringValue[index])
+        override fun get(index: Int): Letter = TinyLetter(stringValue[index])
     }
 
     val length: Int

@@ -6,9 +6,24 @@ import brava.fightinwords.botlin.indexOf
 import brava.fightinwords.botlin.TinyRange
 import brava.fightinwords.botlin.TinyRange.Companion.length
 import brava.fightinwords.botlin.TinyRange.Companion.til
+import brava.fightinwords.botlin.forEachWrappedRange
+import brava.fightinwords.botlin.toUft8String
+import brava.fightinwords.gameplay.KnownLanguage
+import brava.fightinwords.gameplay.data.TinyWord
+import brava.fightinwords.gameplay.data.TinyWordLetters
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import java.nio.ByteBuffer
 
+/**
+ * Suspicious entry:
+ * ```
+ * DID < DO, to begin and carry through to completion [v]
+ * DOS < DO, the first tone of the diatonic musical scale [n]
+ * ```
+ * Is `< DO` an interpolation that should be replaced with `past tense of {do:v}`?
+ * But then, what's the deal with `DOS < DO`?
+ */
 @ConsistentCopyVisibility
 data class NaspaWordListEntry internal constructor(
     private val rawEntry: ByteBuffer,
@@ -24,6 +39,11 @@ data class NaspaWordListEntry internal constructor(
         private const val space = ' '.code.toByte()
         private const val leftSquareBracket = '['.code.toByte()
         private const val rightSquareBracket = ']'.code.toByte()
+        private const val lessThan = '<'.code.toByte()
+        private const val greaterThan = '>'.code.toByte()
+        private const val leftSquiggly = '{'.code.toByte()
+        private const val rightSquiggly = '}'.code.toByte()
+        private const val equals = '='.code.toByte()
 
         fun parse(rawEntry: ByteBuffer) : NaspaWordListEntry {
             val spaceAfterWord = rawEntry.indexOf({it == space})
@@ -42,25 +62,63 @@ data class NaspaWordListEntry internal constructor(
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         private operator fun ByteBuffer.get(range: TinyRange): ByteBuffer = slice(range.start, range.length)
+
+        private fun ByteBuffer.findWrapped(left: Byte, right: Byte, startIndex: Int = 0): TinyRange {
+            val start = indexOf(left, startIndex)
+
+            if(start < 0){
+                return TinyRange.empty
+            }
+
+            val end = indexOf(right, startIndex)
+
+            if(end < 0){
+                return TinyRange.empty
+            }
+
+            return TinyRange(start, end)
+        }
+
+        fun parseSubstitutions(definition: ByteBuffer) : List<WordDefinitionSubstitution> {
+            return buildList {
+                definition.forEachWrappedRange(
+                    lessThan,
+                    greaterThan
+                ){
+                    start, endInclusive ->
+                }
+                var pos = 0
+                while(pos < definition.limit()) {
+                    definition.indexOf('<'.code.toByte())
+                }
+            }
+        }
+
+        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        fun parseNaspaWordKey(
+            definition: ByteBuffer,
+            startIndex: Int,
+            endInclusive: Int
+        ) : WordKey {
+            val delimiterIndex = definition.indexOf(equals, startIndex, endInclusive)
+            val wordLength = delimiterIndex - startIndex
+            val wordSlice = definition.slice(startIndex, wordLength)
+            val partOfSpeech = definition.slice(delimiterIndex+1, definition.limit() - wordLength)
+            return WordKey(
+                TinyWord.of(wordSlice).toWord(),
+                TinyWord.of(partOfSpeech)
+            )
+        }
     }
-}
 
-data class NaspaWordKey(
-    val word: Word,
-    val partOfSpeech: String,
-)
-
-sealed interface NaspaWordReference {
-    val range: IntRange
-    val word: NaspaWordKey
-
-    data class Inline(
-        override val range: IntRange,
-        override val word: NaspaWordKey,
-    ) : NaspaWordReference
-
-    data class Link(
-        override val range: IntRange,
-        override val word: NaspaWordKey,
-    ) : NaspaWordReference
+    fun toWordDefinition(): WordDefinition {
+        return WordDefinition(
+            word = word.toUft8String().toWord(),
+            language = KnownLanguage.English,
+            partOfSpeech = partOfSpeech.toUft8String(),
+            definition = definition.toUft8String(),
+            isNaspaWord = true,
+            substitutions = listOf()
+        )
+    }
 }

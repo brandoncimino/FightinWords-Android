@@ -39,9 +39,26 @@ sealed interface Letter : Comparable<Letter> {
                 else -> CodePointLetter(codePoint)
             }
         }
+
+        /**
+         * @throws IllegalArgumentException If my [codePoint] cannot be represented by a single [Char].
+         * @see Character.isBmpCodePoint
+         */
+        fun Letter.toCharacterOrThrow(): Char {
+            require(
+                Character.isBmpCodePoint(codePoint),
+                { "The letter `$this` cannot be represented by a single ${Char::class}!" })
+            return codePoint.toChar()
+        }
     }
 
     val codePoint: Int
+
+    @Deprecated(
+        "This is unsafe to use, because not all letters can be represented by a single character.",
+        replaceWith = ReplaceWith("toCharacterOrThrow()")
+    )
+    val character: Char get() = toCharacterOrThrow()
 
     override fun compareTo(other: Letter): Int {
         // TODO: See if the actual `compareTo` implementation is ever used. If not, I should probably remove it and use a bespoke implementation that makes case-sensitivity explicit.
@@ -63,6 +80,9 @@ value class TinyLetter private constructor(val byteValue: Byte) : Letter {
 
     override val codePoint: Int
         get() = byteValue.toInt()
+
+    @Suppress("OVERRIDE_DEPRECATION" /* A `TinyLetter` can safely be represented by a single `Char`. */)
+    override val character: Char get() = byteValue.toInt().toChar()
 
     override fun toString(): String {
         return byteValue.toString()

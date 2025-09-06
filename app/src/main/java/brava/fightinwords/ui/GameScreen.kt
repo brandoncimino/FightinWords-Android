@@ -94,7 +94,7 @@ fun GameScreen(
 @Preview(device = Devices.PIXEL, showSystemUi = true)
 @Preview(device = Devices.PIXEL_FOLD, showSystemUi = true)
 fun GameScreenPreview() {
-    val typesetter = Typesetter(LetterPool("obtuse".asSequence().map { Letter(it) }.toList()))
+    val typesetter = Typesetter(LetterPool("obtuse".asSequence().map { Letter.of(it) }.toList()))
     typesetter.currentPool.forEachIndexed { index, slug ->
         if (index % 3 == 0) {
             typesetter.toggle(slug)

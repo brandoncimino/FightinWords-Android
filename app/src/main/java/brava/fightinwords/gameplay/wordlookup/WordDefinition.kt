@@ -16,7 +16,7 @@ data class WordDefinition(
 
 sealed interface WordDefinitionSubstitution {
     val replacementRange: IntRange
-    val word: Word
+    val wordKey: WordKey
 
     /**
      * ## For [NaspaWordListEntry]:
@@ -24,7 +24,7 @@ sealed interface WordDefinitionSubstitution {
      */
     data class Inline(
         override val replacementRange: IntRange,
-        override val word: Word,
+        override val wordKey: WordKey,
     ) : WordDefinitionSubstitution
 
     /**
@@ -33,6 +33,6 @@ sealed interface WordDefinitionSubstitution {
      */
     data class Link(
         override val replacementRange: IntRange,
-        override val word: Word,
+        override val wordKey: WordKey,
     ) : WordDefinitionSubstitution
 }

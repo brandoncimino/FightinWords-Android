@@ -10,8 +10,6 @@ import brava.fightinwords.botlin.forEachWrappedRange
 import brava.fightinwords.botlin.toUft8String
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
-import brava.fightinwords.gameplay.data.TinyWordLetters
-import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import java.nio.ByteBuffer
 
@@ -63,33 +61,31 @@ data class NaspaWordListEntry internal constructor(
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         private operator fun ByteBuffer.get(range: TinyRange): ByteBuffer = slice(range.start, range.length)
 
-        private fun ByteBuffer.findWrapped(left: Byte, right: Byte, startIndex: Int = 0): TinyRange {
-            val start = indexOf(left, startIndex)
-
-            if(start < 0){
-                return TinyRange.empty
-            }
-
-            val end = indexOf(right, startIndex)
-
-            if(end < 0){
-                return TinyRange.empty
-            }
-
-            return TinyRange(start, end)
-        }
-
         fun parseSubstitutions(definition: ByteBuffer) : List<WordDefinitionSubstitution> {
             return buildList {
                 definition.forEachWrappedRange(
-                    lessThan,
-                    greaterThan
+                    leftSquiggly,
+                    rightSquiggly
                 ){
                     start, endInclusive ->
+                    add(
+                        WordDefinitionSubstitution.Link(
+                        start..endInclusive,
+                        parseNaspaWordKey(definition, start, endInclusive)
+                    ))
                 }
-                var pos = 0
-                while(pos < definition.limit()) {
-                    definition.indexOf('<'.code.toByte())
+
+                definition.forEachWrappedRange(
+                    lessThan,
+                    greaterThan
+                ) {
+                    start, endInclusive ->
+                    add(
+                        WordDefinitionSubstitution.Inline(
+                            start..endInclusive,
+                            parseNaspaWordKey(definition, start, endInclusive)
+                        )
+                    )
                 }
             }
         }
@@ -113,12 +109,12 @@ data class NaspaWordListEntry internal constructor(
 
     fun toWordDefinition(): WordDefinition {
         return WordDefinition(
-            word = word.toUft8String().toWord(),
+            word = TinyWord.of(word).toWord(),
             language = KnownLanguage.English,
             partOfSpeech = partOfSpeech.toUft8String(),
             definition = definition.toUft8String(),
             isNaspaWord = true,
-            substitutions = listOf()
+            substitutions = parseSubstitutions(definition)
         )
     }
 }

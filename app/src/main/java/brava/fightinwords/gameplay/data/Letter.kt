@@ -2,7 +2,6 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.gameplay.data.Letter.Companion.describe
 import kotlinx.serialization.Serializable
-import kotlin.ranges.contains
 
 /**
  * A single glyph that we use for gameplay.
@@ -16,8 +15,14 @@ import kotlin.ranges.contains
 sealed interface Letter : Comparable<Letter> {
     companion object {
         fun Char.toLetter(): Letter = of(this)
-        fun Char.describe(): String =
-            "U+${this.code} `$this` ${Character.getName(this.code)} (${this.category}, ${this.isLetter()}, ${this.isWhitespace()})"
+        fun Int.toLetter(): Letter = of(this)
+
+        fun Letter.describe(): String = "U+${this.codePoint} `$this` ${Character.getName(this.codePoint) ?: "unassigned"} (${this.category})"
+
+        /**
+         * @see Char.category
+         */
+        val Letter.category : CharCategory get() = CharCategory.valueOf(Character.getType(codePoint))
 
         fun of(char: Char): Letter {
             return when(val lower = char.asLowerAz()){
@@ -54,6 +59,11 @@ sealed interface Letter : Comparable<Letter> {
 
     val codePoint: Int
 
+    /**
+     * The [Character.charCount] of my [codePoint].
+     */
+    val lengthInChars: Int get() = Character.charCount(codePoint)
+
     @Deprecated(
         "This is unsafe to use, because not all letters can be represented by a single character.",
         replaceWith = ReplaceWith("toCharacterOrThrow()")
@@ -75,11 +85,14 @@ value class TinyLetter private constructor(val byteValue: Byte) : Letter {
     constructor(character: Char) : this(character.code.toByte())
 
     init {
-        assert(byteValue in lowerA..lowerZ, { "${byteValue.toInt().toChar().describe()} must be a lowercase letter between 'a' and 'z'." })
+        assert(byteValue in lowerA..lowerZ, { "${describe()} must be a lowercase letter between 'a' and 'z'." })
     }
 
     override val codePoint: Int
         get() = byteValue.toInt()
+
+    override val lengthInChars: Int
+        get() = 1
 
     @Suppress("OVERRIDE_DEPRECATION" /* A `TinyLetter` can safely be represented by a single `Char`. */)
     override val character: Char get() = byteValue.toInt().toChar()

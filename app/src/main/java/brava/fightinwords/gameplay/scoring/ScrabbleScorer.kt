@@ -2,62 +2,71 @@ package brava.fightinwords.gameplay.scoring
 
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.Letter
+import brava.fightinwords.gameplay.data.Letter.Companion.describe
 import brava.fightinwords.gameplay.data.Word
 
 sealed class ScrabbleScorer : WordScorer {
     companion object Default : ScrabbleScorer()
 
     private fun getLetterScore(letter: Letter, language: KnownLanguage): Int {
-        val lower = letter.character.lowercaseChar()
         return when (language) {
-            KnownLanguage.English -> getEnglishLetterScore(lower)
-            KnownLanguage.German -> getGermanLetterScore(lower)
-            KnownLanguage.Afrikaans -> getAfrikaansLetterScore(lower)
+            KnownLanguage.English -> getEnglishLetterScore(letter)
+            KnownLanguage.German -> getGermanLetterScore(letter)
+            KnownLanguage.Afrikaans -> getAfrikaansLetterScore(letter)
             else -> throw IllegalArgumentException("I don't know how to play $language Scrabble!")
         }
     }
 
-    private fun getEnglishLetterScore(lower: Char): Int {
-        return when (lower) {
-            'a', 'e', 'i', 'l', 'n', 'o', 'r', 's', 't', 'u' -> 1
-            'd', 'g' -> 2
-            'b', 'c', 'm', 'p' -> 3
-            'f', 'h', 'v', 'w', 'y' -> 4
-            'k' -> 5
-            'j', 'x' -> 8
-            'q', 'z' -> 10
-            else -> rejectChar(lower, KnownLanguage.English)
+    private fun getEnglishLetterScore(letter: Letter): Int {
+        return when (letter.codePoint) {
+            'a'.code, 'e'.code, 'i'.code, 'l'.code, 'n'.code, 'o'.code, 'r'.code, 's'.code, 't'.code, 'u'.code -> 1
+            'd'.code, 'g'.code                                                                                 -> 2
+            'b'.code, 'c'.code, 'm'.code, 'p'.code                                                             -> 3
+            'f'.code, 'h'.code, 'v'.code, 'w'.code, 'y'.code                                                   -> 4
+            'k'.code                                                                                           -> 5
+            'j'.code, 'x'.code                                                                                 -> 8
+            'q'.code, 'z'.code                                                                                 -> 10
+            else                                                                                               -> rejectLetter(
+                letter,
+                KnownLanguage.English
+            )
         }
     }
 
-    private fun getGermanLetterScore(lower: Char): Int {
-        return when (lower) {
-            'e', 'n', 's', 'i', 'r', 't', 'u', 'a', 'd' -> 1
-            'h', 'g', 'l', 'o' -> 2
-            'm', 'b', 'w', 'z' -> 3
-            'c', 'f', 'k', 'p' -> 4
-            'ä', 'j', 'ü', 'v' -> 6
-            'ö', 'x' -> 8
-            'q', 'y' -> 10
-            else -> rejectChar(lower, KnownLanguage.German)
+    private fun getGermanLetterScore(letter: Letter): Int {
+        return when (letter.codePoint) {
+            'e'.code, 'n'.code, 's'.code, 'i'.code, 'r'.code, 't'.code, 'u'.code, 'a'.code, 'd'.code -> 1
+            'h'.code, 'g'.code, 'l'.code, 'o'.code                                                   -> 2
+            'm'.code, 'b'.code, 'w'.code, 'z'.code                                                   -> 3
+            'c'.code, 'f'.code, 'k'.code, 'p'.code                                                   -> 4
+            'ä'.code, 'j'.code, 'ü'.code, 'v'.code                                                   -> 6
+            'ö'.code, 'x'.code                                                                       -> 8
+            'q'.code, 'y'.code                                                                       -> 10
+            else                                                                                     -> rejectLetter(
+                letter,
+                KnownLanguage.German
+            )
         };
     }
 
-    private fun getAfrikaansLetterScore(lower: Char): Int {
-        return when (lower) {
-            'e', 'a', 'i', 'o', 'n', 'r', 't', 'l', 's', 'u' -> 1
-            'd', 'g' -> 2
-            'b', 'c', 'm', 'p' -> 3
-            'f', 'h', 'v', 'w', 'y' -> 4
-            'k' -> 5
-            'j', 'x' -> 8
-            'q', 'z' -> 10
-            else -> rejectChar(lower, KnownLanguage.Afrikaans)
+    private fun getAfrikaansLetterScore(letter: Letter): Int {
+        return when (letter.codePoint) {
+            'e'.code, 'a'.code, 'i'.code, 'o'.code, 'n'.code, 'r'.code, 't'.code, 'l'.code, 's'.code, 'u'.code -> 1
+            'd'.code, 'g'.code                                                                                 -> 2
+            'b'.code, 'c'.code, 'm'.code, 'p'.code                                                             -> 3
+            'f'.code, 'h'.code, 'v'.code, 'w'.code, 'y'.code                                                   -> 4
+            'k'.code                                                                                           -> 5
+            'j'.code, 'x'.code                                                                                 -> 8
+            'q'.code, 'z'.code                                                                                 -> 10
+            else                                                                                               -> rejectLetter(
+                letter,
+                KnownLanguage.Afrikaans
+            )
         }
     }
 
-    private fun rejectChar(lower: Char, language: KnownLanguage): Nothing {
-        throw IllegalArgumentException("`$lower` is not a valid letter in $language Scrabble!")
+    private fun rejectLetter(letter: Letter, language: KnownLanguage): Nothing {
+        throw IllegalArgumentException("${letter.describe()} is not a valid letter in $language Scrabble!")
     }
 
     override fun getScore(word: Word, language: KnownLanguage): Int {

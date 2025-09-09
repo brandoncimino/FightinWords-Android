@@ -37,7 +37,7 @@ class WordFileLookup(wordStream: InputStream) : WordLookup {
 
         val wordIndex = random.nextInt(wordsOfThatLength)
         return words.stream()
-            .filter { it.size == desiredLength }
+            .filter { it.length == desiredLength }
             .skip(wordIndex.toLong())
             .findAny()
             .map { Result.success(it) }

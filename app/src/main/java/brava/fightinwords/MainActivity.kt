@@ -27,7 +27,7 @@ import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
-import brava.fightinwords.gameplay.wordlookup.WordFileLookup
+import brava.fightinwords.gameplay.wordlookup.NaspaWordList
 import brava.fightinwords.gameplay.wordlookup.WordLookup
 import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers
 import brava.fightinwords.ui.GameScreen
@@ -40,7 +40,17 @@ class MainActivity : ComponentActivity() {
     private val gameViewModel: GameViewModel by viewModels()
     private val snackbarHostState = SnackbarHostState()
 
-    val naspaWordList by lazy { WordFileLookup(assets.open("en/NWL2023_words.txt")) }
+    /**
+     * Previous implementation, in case I need to go back:
+     *
+     * ```java
+     *     val naspaWordList by lazy { WordFileLookup(assets.open("en/NWL2023_words.txt")) }
+     * ```
+     */
+    val naspaWordList by lazy {
+        val nwlFile = getCachedAssetFile("en/NWL2023.txt")
+        return@lazy NaspaWordList(nwlFile)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

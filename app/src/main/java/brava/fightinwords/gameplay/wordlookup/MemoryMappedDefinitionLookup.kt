@@ -3,7 +3,6 @@ package brava.fightinwords.gameplay.wordlookup
 import android.os.Build
 import androidx.annotation.RequiresApi
 import brava.fightinwords.gameplay.data.TinyWord
-import brava.fightinwords.gameplay.data.TinyWord.Companion.toTinyWord
 import brava.fightinwords.gameplay.data.Word
 import java.nio.ByteBuffer
 
@@ -11,8 +10,10 @@ sealed class MemoryMappedDefinitionLookup(
     private val entries: LongMappedLines,
 ) : DefinitionLookup {
     final override fun findDefinition(word: Word): WordDefinition? {
-        val tinyWord = word.toTinyWord()
-        return findDefinition(tinyWord)
+        return when (word) {
+            is TinyWord -> findDefinition(word)
+            else        -> null
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)

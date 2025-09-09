@@ -2,7 +2,7 @@ package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.botlin.utf8
 import brava.fightinwords.gameplay.KnownLanguage
-import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers.extractTinyWordFromLineStart
+import brava.fightinwords.gameplay.data.TinyWord
 import java.io.File
 import java.nio.ByteBuffer
 
@@ -17,10 +17,16 @@ class DefinitionsCsvLookup private constructor(
     }
 
     companion object {
+        private val commaByte: Byte = ','.code.toByte()
         private fun parseWordLineRanges(file: File) = LongMappedLines.create(
             file,
             { buffer, lineStart, lineEndInclusive ->
-                buffer.extractTinyWordFromLineStart(',', lineStart, lineEndInclusive).packed
+                TinyWord.extractTinyWordFromRange(
+                    commaByte,
+                    lineStart,
+                    lineEndInclusive,
+                    buffer::get
+                ).packed
             }
         )
     }

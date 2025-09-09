@@ -2,15 +2,14 @@ package brava.fightinwords.gameplay.wordlookup
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import brava.fightinwords.botlin.indexOf
 import brava.fightinwords.botlin.TinyRange
 import brava.fightinwords.botlin.TinyRange.Companion.length
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import brava.fightinwords.botlin.forEachWrappedRange
+import brava.fightinwords.botlin.indexOf
 import brava.fightinwords.botlin.toUft8String
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
-import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import java.nio.ByteBuffer
 
 /**
@@ -101,7 +100,7 @@ data class NaspaWordListEntry internal constructor(
             val wordSlice = definition.slice(startIndex, wordLength)
             val partOfSpeech = definition.slice(delimiterIndex+1, definition.limit() - wordLength)
             return WordKey(
-                TinyWord.of(wordSlice).toWord(),
+                TinyWord.of(wordSlice),
                 TinyWord.of(partOfSpeech)
             )
         }
@@ -109,7 +108,7 @@ data class NaspaWordListEntry internal constructor(
 
     fun toWordDefinition(): WordDefinition {
         return WordDefinition(
-            word = TinyWord.of(word).toWord(),
+            word = TinyWord.of(word),
             language = KnownLanguage.English,
             partOfSpeech = partOfSpeech.toUft8String(),
             definition = definition.toUft8String(),

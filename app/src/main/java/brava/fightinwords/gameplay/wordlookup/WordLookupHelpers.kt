@@ -2,12 +2,8 @@ package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.LetterPool
-import brava.fightinwords.gameplay.data.TinyWord
-import brava.fightinwords.gameplay.data.TinyWord.Companion.packLength
-import brava.fightinwords.gameplay.data.TinyWord.Companion.packLetter
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import java.io.InputStream
-import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import kotlin.math.min
 
@@ -51,23 +47,5 @@ internal object WordLookupHelpers {
                 else -> throw IllegalArgumentException("Unknown value for `isNaspaWord`: `$isNaspaWord`. Must be 0 (false) or 1 (true).")
             }
         )
-    }
-
-    fun ByteBuffer.extractTinyWordFromLineStart(wordDelimiter: Char, lineStart: Int, lineEndInclusive: Int): TinyWord {
-        var hash = 0L
-        var pos = lineStart
-        while (pos <= lineEndInclusive) {
-            val current = get(pos)
-            if (current == wordDelimiter.code.toByte()) {
-                break
-            } else {
-                hash = hash.packLetter(current)
-                pos += 1
-            }
-        }
-
-        val length = pos - lineStart
-        hash = hash.packLength(length)
-        return TinyWord(hash)
     }
 }

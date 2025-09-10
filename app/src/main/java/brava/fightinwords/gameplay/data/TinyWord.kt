@@ -2,6 +2,7 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.TinyWordCharSequence.Companion.asCharSequence
+import kotlinx.serialization.Serializable
 import org.jetbrains.annotations.ApiStatus
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -13,6 +14,7 @@ import java.nio.ByteBuffer
 
 @ApiStatus.Experimental
 @JvmInline
+@Serializable
 value class TinyWord(val packed: Long) : Word {
     override val length: Int
         get() = (packed and 0b1111).toInt()
@@ -198,6 +200,51 @@ value class TinyWord(val packed: Long) : Word {
 
                 return action(words.asSequence())
             }
+        }
+
+        internal fun Iterable<Letter>.tryGetTinyLetters(): TinyWord? {
+            if (this is TinyWord) {
+                return this
+            }
+
+            var hash = 0L
+            var length = 0
+            for (letter in this) {
+                if (letter is TinyLetter) {
+                    hash = hash.packLowerAz(letter.byteValue)
+                    length += 1
+
+                    if (length > MAX_PACK) {
+                        return null
+                    }
+                }
+            }
+
+            hash = hash.packLength(length)
+            return TinyWord(hash)
+        }
+    }
+
+    override fun iterator(): Iterator<TinyLetter> {
+        return iterator {
+            for (i in indices) {
+                yield(get(i))
+            }
+        }
+    }
+
+    class TinyWordIterator(
+        private val tinyWord: TinyWord,
+        private var nextIndex: Int = 0,
+    ) : ByteIterator() {
+        override fun nextByte(): Byte {
+            val next = tinyWord[nextIndex]
+            nextIndex += 1
+            return next.byteValue
+        }
+
+        override fun hasNext(): Boolean {
+            return nextIndex < tinyWord.length
         }
     }
 }

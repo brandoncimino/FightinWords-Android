@@ -52,7 +52,6 @@ sealed interface Word : List<Letter>, Comparable<Word> {
         fun Iterable<Letter>.toWord(): Word {
             return when (this) {
                 is Word -> this
-                is List<Letter> -> WordLetters(this)
                 else            -> WordLetters(this.toList())
             }
         }
@@ -84,11 +83,23 @@ sealed interface Word : List<Letter>, Comparable<Word> {
     }
 
     override fun indexOf(element: Letter): Int {
-        return indices.first { get(it) == element }
+        for (i in indices) {
+            if (get(i) == element) {
+                return i
+            }
+        }
+
+        return -1
     }
 
     override fun lastIndexOf(element: Letter): Int {
-        return indices.last { get(it) == element }
+        for (i in indices.reversed()) {
+            if (get(i) == element) {
+                return i
+            }
+        }
+
+        return -1
     }
 }
 

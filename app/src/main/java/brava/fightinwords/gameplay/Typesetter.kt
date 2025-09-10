@@ -2,7 +2,7 @@ package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
-import brava.fightinwords.gameplay.data.LetterPool
+import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import kotlinx.serialization.Serializable

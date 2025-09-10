@@ -16,7 +16,7 @@ class Typesetter(
     /**
      * @param progenitorPool The original [Slug]s that the game was started with.
      */
-    constructor(progenitorPool: LetterPool) : this(
+    constructor(progenitorPool: Iterable<Letter>) : this(
         progenitorPool.map { Slug(it) }
     )
 

@@ -20,14 +20,42 @@ internal object WordLookupHelpers {
         return csvStream.bufferedReader(Charsets.UTF_8)
             .lineSequence()
             .filter {
-                val wordLength = letterPool.canConstructInternal(
-                    it.asSequence().takeWhile { c -> c != csvDelimiter },
-                    buffer
+                val wordLength = letterPool.canConstructBuffered(
+                    it.asSequence().takeWhile { c -> c != csvDelimiter }, buffer
                 )
 
                 return@filter wordLength in wordLengthRange
             }
             .map { parseDefinitionCsvLine(CharBuffer.wrap(it), language) }
+    }
+
+    /**
+     * @return the length of the [word], or -1 if I can't construct it
+     */
+    @Deprecated("Need to move to the nice `canConstruct`.")
+    private fun LetterPool.canConstructBuffered(
+        word: Sequence<Char>, buffer: CharArray,
+    ): Int {
+        for (i in 0..size) {
+            buffer[i] = codePoints[i].toChar()
+        }
+
+        var length = 0
+
+        for (letter in word) {
+            length += 1
+            assert(letter != Char.MIN_VALUE)
+
+            val matchIndex = buffer.indexOf(letter)
+
+            if (matchIndex < 0) {
+                return -1
+            } else {
+                buffer[matchIndex] = Char.MIN_VALUE
+            }
+        }
+
+        return length
     }
 
     fun parseDefinitionCsvLine(line: CharBuffer, language: KnownLanguage): WordDefinition {

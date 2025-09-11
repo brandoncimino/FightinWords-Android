@@ -2,8 +2,14 @@ package brava.fightinwords.gameplay.scoring
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.botlin.TinyFlags
-import brava.fightinwords.gameplay.*
+import brava.fightinwords.gameplay.Accepted
+import brava.fightinwords.gameplay.DefinedWordState
+import brava.fightinwords.gameplay.FocusLens
+import brava.fightinwords.gameplay.GamePlan
+import brava.fightinwords.gameplay.Umpire
 import brava.fightinwords.gameplay.Umpire.Companion.getSerializableState
+import brava.fightinwords.gameplay.UnsubmittedWordVisibility
+import brava.fightinwords.gameplay.WordState
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import kotlinx.serialization.Serializable
 
@@ -76,7 +82,7 @@ class Ledgerman(
                 wordFilterManger = WordFilterManager.fromSerializableState(state.wordFilters, gamePlan),
                 wordSorting = gamePlan.scoreboardSorting,
                 umpire = Umpire.fromSerializableState(state.umpireState, gamePlan),
-                wordLengthRange = gamePlan.minimumWordLength..gamePlan.letterPool.size
+                wordLengthRange = gamePlan.minimumWordLength..gamePlan.letterPool.length
             )
         }
 
@@ -103,7 +109,10 @@ class Ledgerman(
     fun focusOnWord(wordState: DefinedWordState) = focusedWordLens.focusOn(wordState)
 
     enum class WordSorting(val comparator: Comparator<WordState>) : Comparator<WordState> by comparator {
+        /**
+         * AKA "[shortlex order](https://en.wikipedia.org/wiki/Shortlex_order)".
+         */
         LengthFirst(Comparator.comparing<WordState, Int> { it.word.length }.thenBy { it.word }),
-        Alphabetical(Comparator.comparing { it.word }),
+        Lexicographical(Comparator.comparing { it.word }),
     }
 }

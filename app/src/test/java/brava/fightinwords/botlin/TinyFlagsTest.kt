@@ -24,11 +24,22 @@ class TinyFlagsTest {
             }
     }
 
-    private fun assertTinyFlags(actualFlags: TinyFlags, expectedFlagged: Collection<Int>) {
+    private fun assertEnabled(
+        actualFlags: TinyFlags,
+        expectedEnabled: Iterable<Int>,
+    ) {
+        val actualEnabled = actualFlags.toList()
+        Assertions.assertThat(actualEnabled)
+            .describedAs { "Enabled flags of $actualFlags" }
+            .containsExactlyInAnyOrderElementsOf(expectedEnabled)
+    }
+
+    private fun assertTinyFlags(actualFlags: TinyFlags, expectedFlagged: Iterable<Int>) {
         Assertions.assertThat(TinyFlags.MIN_FLAG..TinyFlags.MAX_FLAG)
-            .allSatisfy {
-                Assertions.assertThat(actualFlags[it])
-                    .isEqualTo(expectedFlagged.contains(it))
+            .allSatisfy { flag ->
+                Assertions.assertThat(actualFlags[flag])
+                    .describedAs { "flag $flag enabled in ${actualFlags.describe()}" }
+                    .isEqualTo(expectedFlagged.contains(flag))
             }
     }
 
@@ -127,5 +138,46 @@ class TinyFlagsTest {
         Assertions.assertThat(minussed)
             .describedAs("first - second")
             .containsExactlyInAnyOrderElementsOf(toSetMinussed)
+    }
+
+    fun expectedFirstFlags(flagCount: Int): TinyFlags {
+        return (0 until flagCount).foldFlags()
+    }
+
+    fun firstXTest(flagCount: Int) {
+        val actual = TinyFlags.first(flagCount)
+        val expectedOn = 0 until flagCount
+
+        assertEnabled(actual, expectedOn)
+
+        assertTinyFlags(actual, expectedOn)
+    }
+
+    @Test
+    fun generateFirstMethod() {
+        val caseBranches = (0..TinyFlags.MAX_FLAG_COUNT).joinToString(separator = "\n") {
+            "$it -> ${expectedFirstFlags(it).bitFlags}"
+        }
+        println(caseBranches)
+    }
+
+    @Test
+    fun allTest() {
+        val actual = TinyFlags(Int.MAX_VALUE)
+        val expectedFlagged = range.toList()
+
+        assertTinyFlags(actual, expectedFlagged)
+    }
+
+    @Test
+    fun firstXTest() {
+        Assertions.assertThat(0..TinyFlags.MAX_FLAG_COUNT)
+            .allSatisfy { flagCount ->
+                firstXTest(flagCount)
+            }
+    }
+
+    fun TinyFlags.describe(): String {
+        return "$this ${toList()}"
     }
 }

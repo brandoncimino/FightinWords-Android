@@ -1,6 +1,11 @@
 package brava.fightinwords.ui
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -9,9 +14,11 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import brava.fightinwords.gameplay.*
-import brava.fightinwords.gameplay.data.Letter
-import brava.fightinwords.gameplay.data.LetterPool
+import brava.fightinwords.gameplay.Accepted
+import brava.fightinwords.gameplay.DefinedWordState
+import brava.fightinwords.gameplay.FocusLens
+import brava.fightinwords.gameplay.Typesetter
+import brava.fightinwords.gameplay.Unplayed
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import brava.fightinwords.ui.PreviewHelpers.deez
 import brava.fightinwords.ui.submissions.DefinitionBox
@@ -94,7 +101,7 @@ fun GameScreen(
 @Preview(device = Devices.PIXEL, showSystemUi = true)
 @Preview(device = Devices.PIXEL_FOLD, showSystemUi = true)
 fun GameScreenPreview() {
-    val typesetter = Typesetter(LetterPool("obtuse".asSequence().map { Letter.of(it) }.toList()))
+    val typesetter = Typesetter("obtuse".toWord())
     typesetter.currentPool.forEachIndexed { index, slug ->
         if (index % 3 == 0) {
             typesetter.toggle(slug)
@@ -110,7 +117,7 @@ fun GameScreenPreview() {
 
     val wordFilterStates = PreviewHelpers.wordFilterStates()
 
-    val focusedWord = FocusLens.State<DefinedWordState>(Accepted(PreviewHelpers.deez, 99))
+    val focusedWord = FocusLens.State<DefinedWordState>(Accepted(deez, 99))
     val ledgermanUiState = LedgermanUiState(
         wordFilterStates,
         visibleWords,

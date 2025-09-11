@@ -2,12 +2,14 @@ package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Typesetter.Companion.getSerializableState
+import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.hr.EmployeeFactory.Companion.load
 import brava.fightinwords.gameplay.scoring.Ledgerman
 import brava.fightinwords.gameplay.scoring.Ledgerman.Companion.getSerializableState
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
-import brava.fightinwords.gameplay.wordlookup.WordDefinition
+import brava.fightinwords.gameplay.wordlookup.DefinitionLookup
+import brava.fightinwords.gameplay.wordlookup.DefinitionLookup.Companion.requireDefinition
 
 /**
  * Manages the staff _([Typesetter], [Umpire], etc.)_.
@@ -24,14 +26,16 @@ class GameInProgress(
 
     companion object {
         inline val GamePlan.wordLengthRange
-            inline get() = minimumWordLength..letterPool.size
+            inline get() = minimumWordLength..letterPool.length
 
         fun startGame(
             gamePlan: GamePlan,
-            wordPool: Sequence<WordDefinition>,
+            wordPool: Sequence<Word>,
             wordScorer: WordScorer = ScrabbleScorer,
-            onStatePossiblyChanged: () -> Unit = {}
+            definitionLookup: DefinitionLookup,
+            onStatePossiblyChanged: () -> Unit = {},
         ): GameInProgress {
+            val wordPoolDefinitions = wordPool.map { definitionLookup.requireDefinition(it) }
 
             return GameInProgress(
                 gamePlan = gamePlan,
@@ -39,7 +43,7 @@ class GameInProgress(
                 ledgerman = Ledgerman(
                     unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
                     wordLengthRange = gamePlan.wordLengthRange,
-                    umpire = Umpire(wordPool, wordScorer)
+                    umpire = Umpire(wordPoolDefinitions, wordScorer)
                 ),
                 onStatePossiblyChanged = onStatePossiblyChanged
             )

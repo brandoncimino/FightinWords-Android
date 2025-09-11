@@ -58,4 +58,63 @@ internal object ListImplementation {
 
         return lengthCompare
     }
+
+    inline fun <T> containsAllElementsOf(
+        selfSize: Int,
+        selfGetter: (Int) -> T,
+        otherSize: Int,
+        otherGetter: (Int) -> T,
+        equality: (T, T) -> Boolean,
+    ): Boolean {
+        if (otherSize > selfSize) {
+            return false
+        }
+        if (otherSize == 0) {
+            return true
+        }
+
+        var remaining = TinyFlags.first(selfSize)
+
+        for (i in 0 until otherSize) {
+            val candidate = otherGetter(i)
+
+            val matchIndex = indexOfFiltered(
+                selfSize,
+                selfGetter,
+                remaining::get,
+                candidate,
+                equality
+            )
+
+            if (matchIndex == -1) {
+                return false
+            }
+
+            remaining = remaining.disable(matchIndex)
+        }
+
+        return true
+    }
+
+    inline fun <T> indexOfFiltered(
+        size: Int,
+        getter: (Int) -> T,
+        indexFilter: (Int) -> Boolean,
+        target: T,
+        equality: (T, T) -> Boolean,
+    ): Int {
+        for (i in 0..size) {
+            if (indexFilter(i) == false) {
+                continue
+            }
+
+            val myElement = getter(i)
+
+            if (equality(myElement, target)) {
+                return i
+            }
+        }
+
+        return -1
+    }
 }

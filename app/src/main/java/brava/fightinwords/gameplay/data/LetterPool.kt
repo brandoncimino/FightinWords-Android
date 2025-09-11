@@ -1,61 +1,56 @@
 package brava.fightinwords.gameplay.data
 
-import kotlinx.serialization.Serializable
-import java.util.function.IntFunction
+import brava.fightinwords.botlin.ListImplementation
+import brava.fightinwords.botlin.TinyFlags
+import com.google.common.primitives.ImmutableIntArray
 
-@Serializable
-data class LetterPool(val letters: List<Letter>) : List<Letter> by letters {
-    constructor(letters: Collection<Letter>) : this(letters.toList())
-    @Suppress("unused")
-    fun canConstruct(word: Collection<Letter>): Boolean {
-        if (word.size > size) {
+/**
+ * A [Word] optimized for [canConstruct].
+ */
+class LetterPool(
+    val codePoints: ImmutableIntArray,
+) {
+    constructor(letters: Word) : this(letters.toCodePointArray())
+
+    init {
+        checkSize(codePoints.length())
+    }
+
+    val size inline get() = codePoints.length()
+
+    fun canConstruct(word: Word): Boolean {
+        if (word.length > codePoints.length()) {
             return false
         }
 
-        return canConstructInternal(
-            word.asSequence().map { it.codePoint.toChar() /*TODO: Properly implement this to work with `Letter`s */ },
-            CharArray(size)
-        ) >= 0
+        return ListImplementation.containsAllElementsOf(
+            codePoints.length(),
+            codePoints::get,
+            word.length,
+            word::get,
+            { a, b -> a == b }
+        )
     }
 
-    internal fun copyTo(buffer: CharArray): CharArray {
-        for (i in 0 until buffer.size) {
-            buffer[i] = this[i].codePoint.toChar() /* TODO: Properly implement this to work with `Letter`s */
-        }
-        return buffer
+    companion object {
+        const val MAX_POOL_SIZE = TinyFlags.MAX_FLAG_COUNT
     }
+}
 
-    /**
-     * @return the length of the [word], or -1 if I can't construct it
-     */
-    internal fun canConstructInternal(
-        word: Sequence<Char>,
-        buffer: CharArray,
-    ): Int {
-        this.copyTo(buffer)
+private fun checkSize(size: Int) {
+    // 📎 Not checking that `size` > 0 because that wouldn't offer much value in exchange for making unit tests and `@ComposablePreview`s more annoying.
 
-        var length = 0
-
-        for (letter in word) {
-            length += 1
-            assert(letter != Char.MIN_VALUE)
-
-            val matchIndex = buffer.indexOf(letter)
-
-            if (matchIndex < 0) {
-                return -1
-            } else {
-                buffer[matchIndex] = Char.MIN_VALUE
-            }
-        }
-
-        return length
+    check(size < LetterPool.MAX_POOL_SIZE) {
+        "$size exceeds the${LetterPool::class.simpleName}.MAX_POOL_SIZE of ${LetterPool.MAX_POOL_SIZE}."
     }
+}
 
+private fun Word.toCodePointArray(): ImmutableIntArray {
+    checkSize(length)
 
-    @Suppress("DEPRECATION")
-    @Deprecated("This is a mandatory override of a deprecated Java method.")
-    override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?> {
-        return super.toArray(generator)
+    val builder = ImmutableIntArray.builder(length)
+    for (i in indices) {
+        builder.add(get(i).codePoint)
     }
+    return builder.build().trimmed()
 }

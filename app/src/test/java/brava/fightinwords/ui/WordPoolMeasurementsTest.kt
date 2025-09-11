@@ -2,19 +2,14 @@ package brava.fightinwords.ui
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.Unplayed
-import brava.fightinwords.gameplay.data.LetterPool
-import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
-import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers
 import brava.fightinwords.ui.submissions.WordPoolMeasurements
 import brava.fightinwords.ui.submissions.defaultWordPadding
 import brava.fightinwords.ui.typesetter.LetterTile
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions
 import org.junit.Test
-import java.io.FileInputStream
 
 class WordPoolMeasurementsTest {
     val saigasJson = """
@@ -415,14 +410,6 @@ class WordPoolMeasurementsTest {
           }
         ]
     """
-
-    private fun parseSaigasFromCsv(definitionsFilePath: String = """C:\Users\brand\IdeaProjects\FightinWords\app\src\main\assets\en\definitions.csv""") =
-        WordLookupHelpers.parseConstructibleWords(
-            FileInputStream(definitionsFilePath),
-            KnownLanguage.English,
-            LetterPool("saigas".toWord()),
-            3.."saigas".length,
-        )
 
     val saigasWords = Json.decodeFromString<List<WordDefinition>>(saigasJson)
         .map { Unplayed(it) }

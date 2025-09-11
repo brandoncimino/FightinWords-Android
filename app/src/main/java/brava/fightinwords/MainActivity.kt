@@ -21,15 +21,15 @@ import brava.fightinwords.botlin.blog
 import brava.fightinwords.botlin.putJson
 import brava.fightinwords.botlin.readJson
 import brava.fightinwords.gameplay.GameInProgress
-import brava.fightinwords.gameplay.GameInProgress.Companion.wordLengthRange
 import brava.fightinwords.gameplay.GamePlan
-import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.LetterPool
+import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
+import brava.fightinwords.gameplay.wordlookup.DefinitionLookup
+import brava.fightinwords.gameplay.wordlookup.DefinitionsCsvLookup
 import brava.fightinwords.gameplay.wordlookup.NaspaWordList
 import brava.fightinwords.gameplay.wordlookup.WordLookup
-import brava.fightinwords.gameplay.wordlookup.WordLookupHelpers
 import brava.fightinwords.ui.GameScreen
 import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.theme.FightinWordsTheme
@@ -52,6 +52,11 @@ class MainActivity : ComponentActivity() {
         return@lazy NaspaWordList(nwlFile)
     }
 
+    val definitionsCsvLookup by lazy {
+        val csvFile = getCachedAssetFile("en/definitions.csv")
+        return@lazy DefinitionsCsvLookup(csvFile)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -59,7 +64,11 @@ class MainActivity : ComponentActivity() {
 
         gameViewModel.setGameInProgress(
             when (saveGameState) {
-                null -> startFreshGame(GamePlan(naspaWordList.randomWordLetterPool()))
+                null -> startFreshGame(
+                    GamePlan(naspaWordList.randomWordLetterPool()),
+                    definitionsCsvLookup,
+                    definitionsCsvLookup
+                )
                 else -> GameInProgress.resumeGame(saveGameState)
             }
         )
@@ -129,26 +138,30 @@ ${it.stackTraceToString()}
             }
     }
 
-    private fun WordLookup.randomWordLetterPool(wordLength: Int = 6): LetterPool {
+    private fun WordLookup.randomWordLetterPool(wordLength: Int = 6): Word {
         return findRandomWord(wordLength, Random)
-            .map { LetterPool(it) }
             .getOrThrow()
     }
 
     fun startFreshGame(
         gamePlan: GamePlan,
-        definitionsCsvAssetPath: String = "en/definitions.csv",
-        wordScorer: WordScorer = ScrabbleScorer
+        wordLookup: WordLookup,
+        definitionLookup: DefinitionLookup,
+        wordScorer: WordScorer = ScrabbleScorer,
     ): GameInProgress {
+        val letterPool = LetterPool(gamePlan.letterPool)
+
+        val allAllPossibleWords = (gamePlan.minimumWordLength..gamePlan.letterPool.length)
+            .asSequence()
+            .flatMap {
+                wordLookup.findAllPossibleWords(letterPool, it)
+            }
+
         val gameInProgress = GameInProgress.startGame(
             gamePlan = gamePlan,
-            wordPool = WordLookupHelpers.parseConstructibleWords(
-                csvStream = assets.open(definitionsCsvAssetPath),
-                language = KnownLanguage.English,
-                letterPool = gamePlan.letterPool,
-                wordLengthRange = gamePlan.wordLengthRange
-            ),
-            wordScorer = wordScorer
+            wordPool = allAllPossibleWords,
+            wordScorer = wordScorer,
+            definitionLookup = definitionLookup
         )
 
         return gameInProgress

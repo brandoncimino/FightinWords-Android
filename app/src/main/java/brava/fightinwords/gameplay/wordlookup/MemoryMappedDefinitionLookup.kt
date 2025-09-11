@@ -8,7 +8,7 @@ import java.nio.ByteBuffer
 
 sealed class MemoryMappedDefinitionLookup(
     private val entries: LongMappedLines,
-) : DefinitionLookup {
+) : DefinitionLookup, WordLookup {
     final override fun findDefinition(word: Word): WordDefinition? {
         return when (word) {
             is TinyWord -> findDefinition(word)
@@ -27,6 +27,10 @@ sealed class MemoryMappedDefinitionLookup(
      */
     fun containsWord(tinyWord: TinyWord): Boolean {
         return entries.containsKey(tinyWord.packed)
+    }
+
+    final override fun isWord(word: Word): Boolean {
+        return word is TinyWord && containsWord(word)
     }
 
     protected abstract fun parseLine(

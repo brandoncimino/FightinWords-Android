@@ -6,16 +6,17 @@ import brava.fightinwords.botlin.TinyFlags.Companion.enable
 import kotlinx.serialization.Serializable
 import org.jetbrains.annotations.Contract
 
+//fun TinyFlags() = TinyFlags.none
+
 /**
  * A super-efficient way to represent a map of [Boolean]s to the numbers [0][MIN_FLAG] to [31][MAX_FLAG] (inclusive) as a single [Int].
  *
- * Functionally similar to C#'s [[[Flags]]](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-flagsattribute), as well as the internal representation of Java's [java.util.EnumSet].
+ * Functionally similar to C#'s [[[Flags]]](https://learn.microsoft.com/en-us/dotnet/fundamentals/runtime-libraries/system-flagsattribute)
+as well as the internal representation of Java's [java.util.EnumSet].
  */
 @JvmInline
 @Serializable
-value class TinyFlags private constructor(val bitFlags: Int) : Set<Int> {
-    constructor() : this(0)
-
+value class TinyFlags(val bitFlags: Int = 0) : Set<Int> {
     @Contract(pure = true)
     fun hasFlag(flag: Int): Boolean = bitFlags and (1 shl flag.validate()) != 0
 
@@ -49,32 +50,44 @@ value class TinyFlags private constructor(val bitFlags: Int) : Set<Int> {
     fun disable(flag: Int) = TinyFlags(bitFlags and (1 shl flag.validate()).inv())
 
     companion object {
-        const val MIN_FLAG = 1
+        const val MIN_FLAG = 0
         const val MAX_FLAG = 31
 
-        val none inline get() = TinyFlags()
+        const val MAX_FLAG_COUNT = 32
+
+        const val noneInt = 0
+        const val allInt = -1
+
+        val none inline get() = TinyFlags(noneInt)
+        val all inline get() = TinyFlags(allInt)
+
+        val empty inline get() = fromBitFlags(noneInt)
+
+        fun TinyFlags.isNothing() = this == empty
 
         @JvmStatic
-        fun Int.validate(): Int {
+        private fun Int.validate(): Int {
             require(this in MIN_FLAG..MAX_FLAG, { "$this is not in the range of ${MIN_FLAG..MAX_FLAG}" })
             return this
         }
 
+        @Contract(pure = true)
         fun enable(flag: Int): TinyFlags {
             return TinyFlags().enable(flag)
         }
 
+        @Contract(pure = true)
         fun enable(a: Int, b: Int): TinyFlags {
             return enable(a).enable(b)
         }
 
+        @Contract(pure = true)
         fun enable(a: Int, b: Int, c: Int): TinyFlags {
             return enable(a, b).enable(c)
         }
 
+        @Contract(pure = true)
         fun enable(vararg flags: Int): TinyFlags {
-            enable(59)
-
             flags.map { enable(it) }.reduce { a, b -> a + b }
             return flags.fold(TinyFlags()) { soFar, next ->
                 soFar.enable(next)
@@ -82,6 +95,50 @@ value class TinyFlags private constructor(val bitFlags: Int) : Set<Int> {
         }
 
         fun fromBitFlags(bitFlags: Int) = TinyFlags(bitFlags)
+
+        /**
+         * @return a [brava.fightinwords.botlin.TinyFlags] where the first [flagCount] flags (i.e. `0 until flagCount`) are [enable]d.
+         */
+        fun first(flagCount: Int): TinyFlags {
+            val bitFlags = when (flagCount) {
+                0    -> 0
+                1    -> 1
+                2    -> 3
+                3    -> 7
+                4    -> 15
+                5    -> 31
+                6    -> 63
+                7    -> 127
+                8    -> 255
+                9    -> 511
+                10   -> 1023
+                11   -> 2047
+                12   -> 4095
+                13   -> 8191
+                14   -> 16383
+                15   -> 32767
+                16   -> 65535
+                17   -> 131071
+                18   -> 262143
+                19   -> 524287
+                20   -> 1048575
+                21   -> 2097151
+                22   -> 4194303
+                23   -> 8388607
+                24   -> 16777215
+                25   -> 33554431
+                26   -> 67108863
+                27   -> 134217727
+                28   -> 268435455
+                29   -> 536870911
+                30   -> 1073741823
+                31   -> 2147483647
+                32   -> -1
+                else -> throw IllegalArgumentException()
+            }
+
+            return TinyFlags(bitFlags)
+        }
     }
 
     override val size: Int

@@ -2,6 +2,8 @@ package brava.fightinwords.gameplay.wordlookup
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import brava.fightinwords.botlin.ListImplementation
+import brava.fightinwords.botlin.Substring.Companion.fastSlice
 import brava.fightinwords.botlin.TinyRange
 import brava.fightinwords.botlin.TinyRange.Companion.length
 import brava.fightinwords.botlin.TinyRange.Companion.til
@@ -60,6 +62,7 @@ data class NaspaWordListEntry internal constructor(
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         private operator fun ByteBuffer.get(range: TinyRange): ByteBuffer = slice(range.start, range.length)
 
+        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         fun parseSubstitutions(definition: ByteBuffer) : List<WordDefinitionSubstitution> {
             return buildList {
                 definition.forEachWrappedRange(
@@ -104,8 +107,29 @@ data class NaspaWordListEntry internal constructor(
                 TinyWord.of(partOfSpeech)
             )
         }
+
+        fun parseNaspaWordKey(
+            definition: CharSequence,
+            startIndex: Int,
+            endInclusive: Int,
+        ): WordKey {
+            val delimiterIndex = ListImplementation.indexOf(
+                startIndex,
+                endInclusive,
+                { definition[it] == '=' }
+            )
+            val wordLength = delimiterIndex - startIndex
+            val wordSlice = definition.fastSlice(startIndex, wordLength)
+            val partOfSpeech =
+                definition.fastSlice(delimiterIndex + 1, definition.length - wordLength - 1)
+            return WordKey(
+                TinyWord.of(wordSlice),
+                TinyWord.of(partOfSpeech)
+            )
+        }
     }
 
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun toWordDefinition(): WordDefinition {
         return WordDefinition(
             word = TinyWord.of(word),

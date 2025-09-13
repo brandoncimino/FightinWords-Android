@@ -1,57 +1,83 @@
 package brava.fightinwords.botlin
 
+import androidx.compose.runtime.Stable
+
 /**
  * A [range] of characters within another [source].
  */
+@ConsistentCopyVisibility
 @Suppress("ReplaceRangeStartEndInclusiveWithFirstLast")
-data class Substring(
-    val source: CharSequence,
-    val range: IntRange,
+@Stable
+data class Substring private constructor(
+    private val source: CharSequence,
+    val start: Int,
+    /**
+     * > 📎 While most of kotlin prefers ranges that [IntRange.endInclusive],
+     * this class uses [endExclusive] to match [java.lang.String.substring].
+     */
+    val endExclusive: Int,
 ) : CharSequence {
-    private var _sliced: String? = null
+    private var _string: String = ""
 
-    override val length: Int get() = range.endInclusive - range.start + 1
+    override val length: Int get() = endExclusive - start
 
     override operator fun get(index: Int): Char {
-        return source[range.start + index]
+        return source[start + index]
     }
 
     override fun subSequence(startIndex: Int, endIndex: Int): Substring {
+        if (endIndex < startIndex) {
+            return empty
+        }
+
+        if (startIndex == 0 && endIndex == length) {
+            return this
+        }
+
         return Substring(
             source,
-            range.start + startIndex until range.start + endIndex
+            start + startIndex,
+            start + endIndex - 1
         )
     }
 
     companion object {
         @JvmStatic
-        val EMPTY = Substring("", IntRange.EMPTY)
+        val empty = Substring("", 0, 0)
 
-        @JvmStatic
-        operator fun CharSequence.get(range: IntRange): Substring {
-            return subSlice(range.start, range.endInclusive)
-        }
-
-        //        @JvmStatic
-        internal operator fun CharSequence.get(range: TinyRange): Substring {
-            return subSlice(range.start, range.endInclusive)
-        }
-
-        @JvmStatic
-        fun CharSequence.subSlice(start: Int, endInclusive: Int): Substring {
-            if (endInclusive <= start) {
-                return EMPTY
+        fun CharSequence.fastSubstring(start: Int, endExclusive: Int): CharSequence {
+            if (endExclusive <= start) {
+                return empty
             }
 
-            return Substring(this, start..endInclusive)
+            if (start == 0 && endExclusive == length) {
+                return this
+            }
+
+            return Substring(this, start, endExclusive)
+        }
+
+        @JvmStatic
+        fun CharSequence.fastSlice(start: Int, endInclusive: Int): CharSequence {
+            return fastSubstring(start, endInclusive + 1)
         }
     }
 
     override fun toString(): String {
-        if (_sliced == null) {
-            _sliced = source.substring(range)
+        if (_string.length == 0) {
+            _string = createString()
         }
 
-        return _sliced as String
+        return _string
+    }
+
+    private fun createString(): String {
+        assert { length > 0 }
+
+        val chars = CharArray(length)
+        for (i in start until endExclusive) {
+            chars[i] = source[i]
+        }
+        return String(chars)
     }
 }

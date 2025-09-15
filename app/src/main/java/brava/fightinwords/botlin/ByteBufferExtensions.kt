@@ -1,7 +1,5 @@
 package brava.fightinwords.botlin
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CharsetDecoder
@@ -46,19 +44,7 @@ fun ByteSlice.toUtf8String(
         return ""
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        return toByteBuffer(start, endInclusive).toUtf8String()
-    } else {
-        // You've got an old phone; deal with the extra memory overhead while I copy everything into a fresh byte array
-        val length = endInclusive - start + 1
-        val byteArray = ByteArray(length)
-        for (i in 0..byteArray.lastIndex) {
-            byteArray[i] = get(start + 1)
-        }
-
-        val newBuffer = ByteBuffer.wrap(byteArray)
-        return newBuffer.toUtf8String()
-    }
+    return toByteBuffer(start, endInclusive).toUtf8String()
 }
 
 private val threadLocalUtf8Decoder : ThreadLocal<CharsetDecoder> = ThreadLocal.withInitial { StandardCharsets.UTF_8.newDecoder() }
@@ -131,7 +117,6 @@ inline fun ByteSlice.forEachWrappedRange(
 
 val ByteBuffer.indices inline get() = position() until this.limit()
 
-@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
 inline fun <reified T : Appendable> T.appendUtf8(
     byteSlice: ByteSlice,
     start: Int = 0,

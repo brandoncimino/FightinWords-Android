@@ -30,15 +30,25 @@ data class ByteSlice(
         return source[rangeInSource.start + index]
     }
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun toByteBuffer(
         start: Int = 0,
         endInclusive: Int = lastIndex,
     ): ByteBuffer {
-        return source.slice(
-            rangeInSource.start + start,
-            endInclusive - start + 1
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return source.slice(
+                rangeInSource.start + start,
+                endInclusive - start + 1
+            )
+        } else {
+            // You've got an old phone; deal with the extra memory overhead while I copy everything into a fresh byte array
+            val length = endInclusive - start + 1
+            val byteArray = ByteArray(length)
+            for (i in 0..byteArray.lastIndex) {
+                byteArray[i] = get(start + 1)
+            }
+
+            return ByteBuffer.wrap(byteArray)
+        }
     }
 
     val lastIndex inline get() = size - 1
@@ -72,5 +82,6 @@ data class ByteSlice(
     }
 }
 
-fun ByteBuffer.fastSlice(start: Int, endInclusive: Int) = ByteSlice(this, start, endInclusive)
+fun ByteBuffer.fastSlice(start: Int = 0, endInclusive: Int = lastIndex) =
+    ByteSlice(this, start, endInclusive)
 fun ByteBuffer.fastSlice(range: TinyRange) = ByteSlice(this, range)

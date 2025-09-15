@@ -6,16 +6,23 @@ import androidx.collection.mutableIntIntMapOf
 import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.wordlookup.LongMappedLines.Companion.getMemoryMappedBuffer
 import java.io.File
 import java.nio.ByteBuffer
 
 fun NaspaWordList(
     file: File,
 ): NaspaWordList {
+    return NaspaWordList(file.getMemoryMappedBuffer())
+}
+
+fun NaspaWordList(
+    bytes: ByteBuffer,
+): NaspaWordList {
     val wordLengthCounts = mutableIntIntMapOf()
 
     val longMappedLines = NaspaWordList.parseWordLineRanges(
-        file,
+        bytes,
         wordLengthCounts
     )
 
@@ -52,11 +59,11 @@ class NaspaWordList internal constructor(
         private const val spaceByte: Byte = ' '.code.toByte()
 
         internal fun parseWordLineRanges(
-            file: File,
+            bytes: ByteBuffer,
             wordLengthCounts: MutableIntIntMap,
         ): LongMappedLines {
             return LongMappedLines.create(
-                file
+                bytes
             ) { buffer, lineStart, lineEndInclusive ->
                 val word = TinyWord.extractTinyWordFromRange(
                     spaceByte,

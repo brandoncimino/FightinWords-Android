@@ -130,3 +130,8 @@ inline fun <reified T : Appendable> T.appendUtf8(
     append(byteBuffer.utf8())
     return this
 }
+
+fun String.utf8Bytes(
+    start: Int = 0,
+    endInclusive: Int = lastIndex,
+): ByteBuffer = ByteBuffer.wrap(encodeToByteArray(start, endInclusive + 1, true))

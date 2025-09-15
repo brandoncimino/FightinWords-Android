@@ -1,5 +1,6 @@
 package brava.fightinwords.botlin
 
+import brava.fightinwords.botlin.TinyRange.Companion.length
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions
@@ -18,5 +19,39 @@ class TinyRangeTest {
         Assertions.assertThat(tinyRangeFromJson)
             .isEqualTo(tinyRange)
             .hasToString((1 until 4).toString())
+    }
+
+    @Test
+    fun emptyTest() {
+        val ranges = listOf(
+            TinyRange.empty,
+            TinyRange(1, 0),
+            TinyRange(0, -1)
+        )
+
+        Assertions.assertThat(ranges)
+            .allSatisfy { assertEmpty(it) }
+    }
+
+    private fun assertEmpty(actual: TinyRange) {
+        Assertions.assertThat(actual)
+            .describedAs { "${TinyRange::class.java.simpleName} $actual (packed into: ${actual.packed})" }
+            .satisfies(
+                {
+                    Assertions.assertThat(it.length)
+                        .describedAs { "length" }
+                        .isEqualTo(0)
+                },
+                {
+                    Assertions.assertThat(it.start)
+                        .describedAs { "start" }
+                        .isEqualTo(0)
+                },
+                {
+                    Assertions.assertThat(it.endInclusive)
+                        .describedAs { "endInclusive" }
+                        .isEqualTo(-1)
+                }
+            )
     }
 }

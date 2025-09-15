@@ -52,14 +52,14 @@ value class TinyRange(
         }
 
         val TinyRange.length
-            get() = max(endInclusive - start + 1, 0)
+            inline get() = max(endInclusive - start + 1, 0)
 
-        val TinyRange.isEmpty get() = length <= 0
-        val TinyRange.isNotEmpty get() = !isEmpty
+        val TinyRange.isEmpty inline get() = packed == empty.packed || endInclusive < start
+        val TinyRange.isNotEmpty inline get() = endInclusive >= start
 
         operator fun TinyRange.iterator() = (start..endInclusive).iterator()
 
-        val empty: TinyRange = TinyRange(0, -1)
+        val empty: TinyRange inline get() = TinyRange(0)
     }
 
     override fun toString(): String {

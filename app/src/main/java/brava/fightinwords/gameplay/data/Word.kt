@@ -2,6 +2,7 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
+import brava.fightinwords.ui.submissions.appendCodePoint
 import kotlinx.serialization.Serializable
 import org.jetbrains.annotations.ApiStatus
 import java.util.function.IntFunction
@@ -207,5 +208,28 @@ value class WordLetters(val letters: List<Letter>) : List<Letter> by letters, Co
 
     override fun subList(fromIndex: Int, toIndex: Int): List<Letter> {
         return letters.subList(fromIndex, toIndex)
+    }
+}
+
+fun Appendable.append(word: Word): Appendable {
+    if (word.isEmpty()) {
+        return this
+    }
+
+    return when (word) {
+        is StringWord -> append(word.stringValue)
+        is TinyWord   -> {
+            for (i in word.indices) {
+                append(word[i].character)
+            }
+            this
+        }
+
+        else          -> {
+            for (i in word.indices) {
+                appendCodePoint(word[i].codePoint)
+            }
+            this
+        }
     }
 }

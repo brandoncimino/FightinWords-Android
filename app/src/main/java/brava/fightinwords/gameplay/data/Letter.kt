@@ -89,13 +89,13 @@ value class TinyLetter private constructor(val byteValue: Byte) : Letter {
     }
 
     override val codePoint: Int
-        get() = byteValue.toInt()
+        inline get() = byteValue.toInt()
 
     override val lengthInChars: Int
-        get() = 1
+        inline get() = 1
 
     @Suppress("OVERRIDE_DEPRECATION" /* A `TinyLetter` can safely be represented by a single `Char`. */)
-    override val character: Char get() = byteValue.toInt().toChar()
+    override val character: Char inline get() = byteValue.toInt().toChar()
 
     override fun toString(): String {
         return byteValue.toString()

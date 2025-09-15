@@ -1,7 +1,6 @@
 package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.Nicknamed.Companion.nicknamed
-import brava.fightinwords.botlin.forEachLine
 import brava.fightinwords.botlin.forEachLineRange
 import org.assertj.core.api.Assertions
 import org.junit.Test
@@ -36,21 +35,6 @@ class ReadLineRangeTest {
                     .describedAs { "Matches kotlin lines" }
                     .isEqualTo(str.value.lines())
                     .allSatisfy { Assertions.assertThat(it).doesNotContain("\n") }
-            }
-    }
-
-    @Test
-    fun forEachLineTest() {
-        Assertions.assertThat(multilineStrings)
-            .allSatisfy { str ->
-                val lines = buildList {
-                    str.value.byteBuffer().forEachLine(this::add)
-                }
-
-                val lineStrings = lines.map { it.toString() }
-
-                Assertions.assertThat(lineStrings)
-                    .isEqualTo(str.value.lines())
             }
     }
 }

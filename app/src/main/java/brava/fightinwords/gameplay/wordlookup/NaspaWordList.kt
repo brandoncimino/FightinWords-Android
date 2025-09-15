@@ -3,6 +3,7 @@ package brava.fightinwords.gameplay.wordlookup
 import androidx.collection.IntIntMap
 import androidx.collection.MutableIntIntMap
 import androidx.collection.mutableIntIntMapOf
+import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
 import java.io.File
@@ -25,10 +26,10 @@ class NaspaWordList internal constructor(
     entries: LongMappedLines,
     wordLengthCounts: IntIntMap,
 ) : WordMappedLines(entries, wordLengthCounts), ShortlexWordList {
-//    constructor(file: File) : this(parseWordLineRanges(file))
-
-    override fun parseLine(line: ByteBuffer): WordDefinition {
-        return NaspaWordListEntry.parse(line).toWordDefinition()
+    override fun parseLine(
+        rawEntry: ByteSlice,
+    ): WordDefinition {
+        return NaspaWordListEntry.parse(rawEntry).toWordDefinition()
     }
 
     override fun getCountOfWordsWithLength(wordLength: Int): Int = wordLengthCounts[wordLength]
@@ -38,6 +39,13 @@ class NaspaWordList internal constructor(
 
     override fun getWordByIndex(wordIndex: Int): Word {
         TODO("Not yet implemented")
+    }
+
+    fun findEntry(word: TinyWord): NaspaWordListEntry? {
+        val line = entries.findLine(word.packed)
+        return line?.let {
+            NaspaWordListEntry.parse(it)
+        }
     }
 
     companion object {

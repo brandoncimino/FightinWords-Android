@@ -1,20 +1,21 @@
 package brava.fightinwords.gameplay.wordlookup
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.botlin.Substring.Companion.fastSlice
 import brava.fightinwords.botlin.TinyRange
-import brava.fightinwords.botlin.TinyRange.Companion.length
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import brava.fightinwords.botlin.forEachWrappedRange
 import brava.fightinwords.botlin.indexOf
-import brava.fightinwords.botlin.toUft8String
+import brava.fightinwords.botlin.toUtf8String
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
-import java.nio.ByteBuffer
+import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.leftSquiggly
+import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.rightSquiggly
 
 /**
+ * A single line of the [NASPA Word List](https://www.scrabbleplayers.org/w/NASPA_Word_List).
+ *
  * Suspicious entry:
  * ```
  * DID < DO, to begin and carry through to completion [v]
@@ -25,16 +26,20 @@ import java.nio.ByteBuffer
  */
 @ConsistentCopyVisibility
 data class NaspaWordListEntry internal constructor(
-    private val rawEntry: ByteBuffer,
-    private val wordRange: TinyRange,
-    private val definitionRange: TinyRange,
-    private val partOfSpeechRange: TinyRange,
+    val rawEntry: ByteSlice,
+    val wordRange: TinyRange,
+    val definitionRange: TinyRange,
+    val partOfSpeechRange: TinyRange,
 ) {
-    val word get() = rawEntry[wordRange]
-    val definition get() = rawEntry[definitionRange]
-    val partOfSpeech get() = rawEntry[partOfSpeechRange]
+    fun definitionSlice() = rawEntry.slice(definitionRange)
 
     companion object {
+        const val inlineStart = '<'.code.toByte()
+        const val inlineEnd = '>'.code.toByte()
+
+        const val linkStart = '{'.code.toByte()
+        const val linkEnd = '}'.code.toByte()
+
         private const val space = ' '.code.toByte()
         private const val leftSquareBracket = '['.code.toByte()
         private const val rightSquareBracket = ']'.code.toByte()
@@ -44,7 +49,9 @@ data class NaspaWordListEntry internal constructor(
         private const val rightSquiggly = '}'.code.toByte()
         private const val equals = '='.code.toByte()
 
-        fun parse(rawEntry: ByteBuffer) : NaspaWordListEntry {
+        fun parse(
+            rawEntry: ByteSlice,
+        ): NaspaWordListEntry {
             val spaceAfterWord = rawEntry.indexOf({it == space})
             val openingSquareBracket = rawEntry.indexOf({it == leftSquareBracket}, startIndex = spaceAfterWord + 1)
 
@@ -59,11 +66,7 @@ data class NaspaWordListEntry internal constructor(
             )
         }
 
-        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-        private operator fun ByteBuffer.get(range: TinyRange): ByteBuffer = slice(range.start, range.length)
-
-        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-        fun parseSubstitutions(definition: ByteBuffer) : List<WordDefinitionSubstitution> {
+        fun parseSubstitutions(definition: ByteSlice): List<WordDefinitionSubstitution> {
             return buildList {
                 definition.forEachWrappedRange(
                     leftSquiggly,
@@ -92,19 +95,33 @@ data class NaspaWordListEntry internal constructor(
             }
         }
 
-        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        /**
+         * Extracts a [WordKey] from a "reference" in a [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definition],
+         * e.g. `{bisexual=n}` in `BI a {bisexual=n} [n BIS]`.
+         *
+         * @param definition The full [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definition]
+         * @param wrapperStart The index in the [definition] that indicated the beginning of the word key, e.g. [leftSquiggly] in `{bisexual=n}`.
+         * @param wrapperEndInclusive The index in the [definition] of the closing character, e.g. [rightSquiggly] in `{bisexual=n}`.
+         */
         fun parseNaspaWordKey(
-            definition: ByteBuffer,
-            startIndex: Int,
-            endInclusive: Int
+            definition: ByteSlice,
+            wrapperStart: Int,
+            wrapperEndInclusive: Int,
         ) : WordKey {
-            val delimiterIndex = definition.indexOf(equals, startIndex, endInclusive)
-            val wordLength = delimiterIndex - startIndex
-            val wordSlice = definition.slice(startIndex, wordLength)
-            val partOfSpeech = definition.slice(delimiterIndex+1, definition.limit() - wordLength)
+            val delimiterIndex =
+                definition.indexOf(equals, wrapperStart + 1, wrapperEndInclusive - 1)
+
             return WordKey(
-                TinyWord.of(wordSlice),
-                TinyWord.of(partOfSpeech)
+                TinyWord.of(
+                    definition,
+                    wrapperStart + 1,
+                    delimiterIndex - 1
+                ),
+                TinyWord.of(
+                    definition,
+                    delimiterIndex + 1,
+                    wrapperEndInclusive - 1
+                )
             )
         }
 
@@ -129,15 +146,16 @@ data class NaspaWordListEntry internal constructor(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun toWordDefinition(): WordDefinition {
+        val definitionSlice = rawEntry.slice(definitionRange)
         return WordDefinition(
-            word = TinyWord.of(word),
+            word = TinyWord.of(rawEntry, wordRange.start, wordRange.endInclusive),
             language = KnownLanguage.English,
-            partOfSpeech = partOfSpeech.toUft8String(),
-            definition = definition.toUft8String(),
+            partOfSpeech =
+                rawEntry.slice(partOfSpeechRange).toUtf8String(),
+            definition = definitionSlice.toUtf8String(),
             isNaspaWord = true,
-            substitutions = parseSubstitutions(definition)
+            substitutions = parseSubstitutions(definitionSlice)
         )
     }
 }

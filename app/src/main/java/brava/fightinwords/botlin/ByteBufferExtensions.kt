@@ -2,21 +2,10 @@ package brava.fightinwords.botlin
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import com.google.common.base.Ascii
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CharsetDecoder
 import java.nio.charset.StandardCharsets
-
-@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-internal inline fun ByteBuffer.forEachLine(
-    action: (ByteBuffer) -> Unit,
-) {
-    forEachLineRange { start, endInclusive ->
-        val line = this.slice(start, (endInclusive - start) + 1)
-        action(line)
-    }
-}
 
 inline fun ByteBuffer.forEachLineRange(
     action: (start: Int, endInclusive: Int) -> Unit,
@@ -25,7 +14,7 @@ inline fun ByteBuffer.forEachLineRange(
     var pos = 0
     while (pos < limit()) {
         val current = get(pos)
-        if (current == Ascii.LF) {
+        if (current == '\n'.code.toByte()) {
             action(lineStart, pos - 1)
             lineStart = pos + 1
         }
@@ -47,16 +36,57 @@ fun ByteBuffer.utf8() : CharBuffer {
     return threadLocalUtf8Decoder.get()!!.decode(this)
 }
 
-fun ByteBuffer.toUft8String() : String = utf8().toString()
+fun ByteBuffer.toUtf8String(): String = utf8().toString()
+
+fun ByteSlice.toUtf8String(
+    start: Int = 0,
+    endInclusive: Int = lastIndex,
+): String {
+    if (endInclusive < start) {
+        return ""
+    }
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+        return toByteBuffer(start, endInclusive).toUtf8String()
+    } else {
+        // You've got an old phone; deal with the extra memory overhead while I copy everything into a fresh byte array
+        val length = endInclusive - start + 1
+        val byteArray = ByteArray(length)
+        for (i in 0..byteArray.lastIndex) {
+            byteArray[i] = get(start + 1)
+        }
+
+        val newBuffer = ByteBuffer.wrap(byteArray)
+        return newBuffer.toUtf8String()
+    }
+}
 
 private val threadLocalUtf8Decoder : ThreadLocal<CharsetDecoder> = ThreadLocal.withInitial { StandardCharsets.UTF_8.newDecoder() }
 
 /**
  * @see kotlin.collections.lastIndex
  */
-val ByteBuffer.lastIndex get() = limit() - 1
+val ByteBuffer.lastIndex inline get() = limit() - 1
 
-inline fun ByteBuffer.indexOf(predicate: (Byte) -> Boolean, startIndex: Int = 0, endInclusive: Int = lastIndex) : Int {
+inline fun ByteBuffer.indexOf(
+    predicate: (Byte) -> Boolean,
+    startIndex: Int = 0,
+    endInclusive: Int = lastIndex,
+): Int {
+    for (i in startIndex..endInclusive) {
+        if (predicate(get(i))) {
+            return i
+        }
+    }
+
+    return -1
+}
+
+inline fun ByteSlice.indexOf(
+    predicate: (Byte) -> Boolean,
+    startIndex: Int = 0,
+    endInclusive: Int = lastIndex,
+): Int {
     for(i in startIndex..endInclusive){
         if(predicate(get(i))){
             return i
@@ -70,30 +100,18 @@ fun ByteBuffer.indexOf(byte: Byte, startIndex: Int = 0, endInclusive: Int = last
     return indexOf({it == byte}, startIndex, endInclusive)
 }
 
-fun ByteBuffer.findWrappedRange(open: Byte, close: Byte, startIndex: Int = 0, endInclusive: Int = lastIndex): TinyRange {
-    val startByteIndex = indexOf(open, startIndex, lastIndex)
-
-    if(startByteIndex < 0){
-        return TinyRange.empty
-    }
-
-    val end = indexOf(close, startByteIndex+1, lastIndex)
-
-    if(end < 0){
-        return TinyRange.empty
-    }
-
-    return TinyRange(startByteIndex, end)
+fun ByteSlice.indexOf(byte: Byte, startIndex: Int = 0, endInclusive: Int = lastIndex): Int {
+    return indexOf({ it == byte }, startIndex, endInclusive)
 }
 
-fun ByteBuffer.forEachWrappedRange(
+inline fun ByteSlice.forEachWrappedRange(
     open: Byte,
     close: Byte,
     startIndex: Int = 0,
     action: (start: Int, endInclusive: Int) -> Unit,
 ) {
     var pos = startIndex
-    while(pos < limit()){
+    while (pos <= lastIndex) {
         val start = indexOf(open, pos)
 
         if(start < 0){
@@ -109,4 +127,21 @@ fun ByteBuffer.forEachWrappedRange(
         action(start, end)
         pos = end+1
     }
+}
+
+val ByteBuffer.indices inline get() = position() until this.limit()
+
+@RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+inline fun <reified T : Appendable> T.appendUtf8(
+    byteSlice: ByteSlice,
+    start: Int = 0,
+    endInclusive: Int = byteSlice.lastIndex,
+): T {
+    if (endInclusive < start) {
+        return this
+    }
+
+    val byteBuffer = byteSlice.toByteBuffer(start, endInclusive)
+    append(byteBuffer.utf8())
+    return this
 }

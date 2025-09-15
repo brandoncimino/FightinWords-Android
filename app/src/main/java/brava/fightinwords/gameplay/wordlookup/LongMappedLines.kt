@@ -15,7 +15,7 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
 class LongMappedLines(
-    private val bytes: MappedByteBuffer,
+    private val bytes: ByteBuffer,
     internal val wordDefinitionRanges: LongLongMap,
 ) {
     fun findLine(key: Long): ByteSlice? {
@@ -53,9 +53,16 @@ class LongMappedLines(
             keyExtractor: (ByteBuffer, Int, Int) -> Long,
         ): LongMappedLines {
             val mappedByteBuffer = file.getMemoryMappedBuffer()
-            val wordDefinitionRanges = parseLineRanges(mappedByteBuffer, keyExtractor)
+            return create(mappedByteBuffer, keyExtractor)
+        }
+
+        inline fun create(
+            bytes: ByteBuffer,
+            keyExtractor: (ByteBuffer, Int, Int) -> Long,
+        ): LongMappedLines {
+            val wordDefinitionRanges = parseLineRanges(bytes, keyExtractor)
             return LongMappedLines(
-                mappedByteBuffer,
+                bytes,
                 wordDefinitionRanges
             )
         }
@@ -67,12 +74,12 @@ class LongMappedLines(
         }
 
         inline fun parseLineRanges(
-            buffer: MappedByteBuffer,
+            bytes: ByteBuffer,
             keyExtractor: (ByteBuffer, start: Int, endInclusive: Int) -> Long,
         ): LongLongMap {
             return buildLongLongMap {
-                buffer.forEachLineRange { start, endInclusive ->
-                    val key = keyExtractor(buffer, start, endInclusive)
+                bytes.forEachLineRange { start, endInclusive ->
+                    val key = keyExtractor(bytes, start, endInclusive)
                     put(key, TinyRange.packInts(start, endInclusive))
                 }
             }

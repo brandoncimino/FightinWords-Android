@@ -1,5 +1,6 @@
 package brava.fightinwords.gameplay.data
 
+import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.lastIndex
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.TinyWordCharSequence.Companion.asCharSequence
@@ -67,10 +68,21 @@ value class TinyWord(val packed: Long) : Word {
         const val MAX_PACK = 12
 
         fun of(
+            bytes: ByteSlice,
+            start: Int = 0,
+            endInclusive: Int = bytes.lastIndex,
+        ) = TinyWord(
+            packAZ(bytes::get, start, endInclusive)
+        )
+
+        fun of(
             byteBuffer: ByteBuffer,
-            start: Int = byteBuffer.position(),
+            start: Int = 0,
             endInclusive: Int = byteBuffer.lastIndex,
-        ) = TinyWord(packAZ(byteBuffer, start, endInclusive))
+        ) = TinyWord(
+            packAZ(byteBuffer::get, start, endInclusive)
+        )
+
         fun of(tinyLetters: Iterable<TinyLetter>): TinyWord {
             return when (tinyLetters) {
                 is TinyWord -> tinyLetters
@@ -152,11 +164,15 @@ value class TinyWord(val packed: Long) : Word {
         private fun Long.packLetter(letter: Byte): Long = packLowerAz(letter.toLowerAz())
         private fun Long.packLength(length: Int): Long = (this shl 4) or length.toLong()
 
-        private fun packAZ(utf8Bytes: ByteBuffer, start: Int, endInclusive: Int): Long {
+        private inline fun packAZ(
+            getter: (Int) -> Byte,
+            start: Int,
+            endInclusive: Int,
+        ): Long {
             val length = (endInclusive - start + 1).requireLength()
             var hash = 0L
             for (i in start..endInclusive) {
-                val c = utf8Bytes[i]
+                val c = getter(i)
                 hash = hash.packLetter(c)
             }
 

@@ -1,10 +1,10 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.utf8
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
 import java.io.File
-import java.nio.ByteBuffer
 
 class DefinitionsCsvLookup private constructor(
     entries: LongMappedLines,
@@ -12,8 +12,8 @@ class DefinitionsCsvLookup private constructor(
 ) : MemoryMappedDefinitionLookup(entries) {
     constructor(file: File) : this(parseWordLineRanges(file))
 
-    override fun parseLine(line: ByteBuffer): WordDefinition {
-        return WordLookupHelpers.parseDefinitionCsvLine(line.utf8(), language)
+    override fun parseLine(rawEntry: ByteSlice): WordDefinition {
+        return WordLookupHelpers.parseDefinitionCsvLine(rawEntry.toByteBuffer().utf8(), language)
     }
 
     companion object {

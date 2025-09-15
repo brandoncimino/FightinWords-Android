@@ -1,5 +1,6 @@
 package brava.fightinwords.gameplay.data
 
+import brava.fightinwords.botlin.lastIndex
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.TinyWordCharSequence.Companion.asCharSequence
 import kotlinx.serialization.Serializable
@@ -56,14 +57,24 @@ value class TinyWord(val packed: Long) : Word {
         return TinyWord(hash)
     }
 
+    inline fun forEach(action: (TinyLetter) -> Unit) {
+        for (i in indices) {
+            action(get(i))
+        }
+    }
+
     companion object {
         const val MAX_PACK = 12
 
-        fun of(byteBuffer: ByteBuffer) = TinyWord(packAZ(byteBuffer))
+        fun of(
+            byteBuffer: ByteBuffer,
+            start: Int = byteBuffer.position(),
+            endInclusive: Int = byteBuffer.lastIndex,
+        ) = TinyWord(packAZ(byteBuffer, start, endInclusive))
         fun of(tinyLetters: Iterable<TinyLetter>): TinyWord {
             return when (tinyLetters) {
                 is TinyWord -> tinyLetters
-                is Collection<TinyLetter> -> createNew(tinyLetters)
+                is Collection<TinyLetter> -> fromCollection(tinyLetters)
                 else -> {
                     var length = 0
                     var hash = 0L
@@ -78,11 +89,8 @@ value class TinyWord(val packed: Long) : Word {
             }
         }
 
-        fun of(tinyLetters: Collection<TinyLetter>): Collection<Letter> {
-            return when (tinyLetters) {
-                is TinyWord -> tinyLetters
-                else        -> createNew(tinyLetters)
-            }
+        fun of(charSequence: CharSequence): TinyWord {
+            return TinyWord(packAZ(charSequence));
         }
 
         internal inline fun extractTinyWordFromRange(
@@ -116,7 +124,7 @@ value class TinyWord(val packed: Long) : Word {
             return TinyWord(hash)
         }
 
-        private fun createNew(letters: Collection<TinyLetter>): TinyWord {
+        private fun fromCollection(letters: Collection<TinyLetter>): TinyWord {
             letters.size.requireLength()
 
             var hash = 0L
@@ -144,6 +152,17 @@ value class TinyWord(val packed: Long) : Word {
         private fun Long.packLetter(letter: Byte): Long = packLowerAz(letter.toLowerAz())
         private fun Long.packLength(length: Int): Long = (this shl 4) or length.toLong()
 
+        private fun packAZ(utf8Bytes: ByteBuffer, start: Int, endInclusive: Int): Long {
+            val length = (endInclusive - start + 1).requireLength()
+            var hash = 0L
+            for (i in start..endInclusive) {
+                val c = utf8Bytes[i]
+                hash = hash.packLetter(c)
+            }
+
+            return hash.packLength(length)
+        }
+
         private fun packAZ(utf8Bytes: ByteBuffer): Long {
             var hash = 0L
             var length = 0
@@ -157,8 +176,9 @@ value class TinyWord(val packed: Long) : Word {
             return hash.packLength(length)
         }
 
-        private fun Int.requireLength() {
+        private fun Int.requireLength(): Int {
             require(this in 1..MAX_PACK, { "Must be 1–$MAX_PACK characters of a–z" })
+            return this
         }
 
         private const val aByte = 'a'.code.toByte()
@@ -223,6 +243,14 @@ value class TinyWord(val packed: Long) : Word {
             hash = hash.packLength(length)
             return TinyWord(hash)
         }
+
+        inline fun TinyWord.forEachLetter(
+            action: (TinyLetter) -> Unit,
+        ) {
+            for (i in 0 until length) {
+                action(get(i))
+            }
+        }
     }
 
     override fun iterator(): Iterator<TinyLetter> {
@@ -230,21 +258,6 @@ value class TinyWord(val packed: Long) : Word {
             for (i in indices) {
                 yield(get(i))
             }
-        }
-    }
-
-    class TinyWordIterator(
-        private val tinyWord: TinyWord,
-        private var nextIndex: Int = 0,
-    ) : ByteIterator() {
-        override fun nextByte(): Byte {
-            val next = tinyWord[nextIndex]
-            nextIndex += 1
-            return next.byteValue
-        }
-
-        override fun hasNext(): Boolean {
-            return nextIndex < tinyWord.length
         }
     }
 }

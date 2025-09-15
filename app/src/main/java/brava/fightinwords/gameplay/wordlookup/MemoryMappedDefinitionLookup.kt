@@ -1,13 +1,11 @@
 package brava.fightinwords.gameplay.wordlookup
 
-import android.os.Build
-import androidx.annotation.RequiresApi
+import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
-import java.nio.ByteBuffer
 
 sealed class MemoryMappedDefinitionLookup(
-    private val entries: LongMappedLines,
+    protected val entries: LongMappedLines,
 ) : DefinitionLookup, WordLookup {
     final override fun findDefinition(word: Word): WordDefinition? {
         return when (word) {
@@ -16,9 +14,8 @@ sealed class MemoryMappedDefinitionLookup(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     fun findDefinition(tinyWord: TinyWord): WordDefinition? {
-        val line = entries.getLine(tinyWord.packed) ?: return null
+        val line = entries.findLine(tinyWord.packed) ?: return null
         return parseLine(line)
     }
 
@@ -34,6 +31,6 @@ sealed class MemoryMappedDefinitionLookup(
     }
 
     protected abstract fun parseLine(
-        line: ByteBuffer,
+        rawEntry: ByteSlice,
     ): WordDefinition
 }

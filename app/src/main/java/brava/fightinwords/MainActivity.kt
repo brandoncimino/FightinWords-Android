@@ -18,8 +18,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import brava.fightinwords.botlin.blog
-import brava.fightinwords.botlin.putJson
-import brava.fightinwords.botlin.readJson
 import brava.fightinwords.gameplay.GameInProgress
 import brava.fightinwords.gameplay.GamePlan
 import brava.fightinwords.gameplay.data.LetterPool
@@ -34,11 +32,20 @@ import brava.fightinwords.ui.GameScreen
 import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.theme.FightinWordsTheme
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialFormat
+import kotlinx.serialization.cbor.Cbor
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     private val gameViewModel: GameViewModel by viewModels()
     private val snackbarHostState = SnackbarHostState()
+
+    /**
+     * The format used to save/load the game state from a `savedInstanceState` [Bundle].
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    private val serialFormat: SerialFormat = Cbor
 
     /**
      * Previous implementation, in case I need to go back:
@@ -117,7 +124,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         val gameState = gameViewModel.getSerializableState()
-        outState.putJson(gameState)
+        outState.putSingleton(gameState, serialFormat)
 
         // The official example puts the call to the `super` method at the _end_ of the child: https://developer.android.com/guide/components/activities/activity-lifecycle#save-simple,-lightweight-ui-state-using-onsaveinstancestate
         super.onSaveInstanceState(outState)
@@ -126,7 +133,7 @@ class MainActivity : ComponentActivity() {
     private fun Bundle.loadSaveGameState(): SaveGameState? {
         blog { "We have a saved ${javaClass.simpleName}; attempting to load a ${SaveGameState::class.simpleName} from it..." }
 
-        return runCatching { this.readJson<SaveGameState>() }
+        return runCatching { this.getSingleton<SaveGameState>(serialFormat) }
             .getOrElse {
                 blog(Log.ERROR) {
                     """Unable to load a valid ${SaveGameState::class.simpleName} from the savedInstanceState due to:

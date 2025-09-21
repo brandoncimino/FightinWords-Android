@@ -1,8 +1,6 @@
 package brava.fightinwords.botlin
 
-import android.os.Bundle
 import android.util.Log
-import kotlinx.serialization.json.Json
 import kotlin.reflect.KProperty
 
 inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String? = javaClass.simpleName, message: () -> Any?) {
@@ -54,31 +52,6 @@ inline fun <T> T.peekIfNull(action: () -> Unit): T {
     }
 
     return this
-}
-
-inline fun <reified T : Any> Bundle.putJson(obj: T, key: String? = T::class.qualifiedName, jsonThingy: Json = Json) {
-    val json = jsonThingy.encodeToString<T>(obj)
-    blog(Log.VERBOSE) {
-        """Saving the ${this.javaClass.simpleName} key `$key` with the ${T::class.simpleName}-JSON:
-        | ```json
-        | $json
-        | ```""".trimMargin()
-    }
-    putString(key, json)
-}
-
-inline fun <reified T : Any> Bundle.readJson(jsonThingy: Json = Json): T? =
-    readJson<T>(T::class.qualifiedName, jsonThingy)
-
-inline fun <reified T : Any> Bundle.readJson(key: String? = T::class.qualifiedName, jsonThingy: Json = Json): T? {
-    val json = this.getString(key)
-
-    if (json == null) {
-        blog { "The key `$key` wasn't present in the ${this.javaClass.simpleName}!" }
-        return null
-    }
-
-    return jsonThingy.decodeFromString(json)
 }
 
 val IntRange.size: Int get() = endInclusive - start + 1

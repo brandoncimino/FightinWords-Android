@@ -4,6 +4,7 @@ import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.Letter.Companion.describe
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.Word.Companion.indices
 
 sealed class ScrabbleScorer : WordScorer {
     companion object Default : ScrabbleScorer()
@@ -70,7 +71,11 @@ sealed class ScrabbleScorer : WordScorer {
     }
 
     override fun getScore(word: Word, language: KnownLanguage): Int {
-        return word.sumOf { getLetterScore(it, language) }
+        var score = 0
+        for (i in word.indices) {
+            score += getLetterScore(word[i], language)
+        }
+        return score
     }
 
 }

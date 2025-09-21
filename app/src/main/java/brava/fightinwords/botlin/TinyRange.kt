@@ -11,6 +11,9 @@ import kotlin.math.max
  *   TinyRange:     1 til 4
  *   toString():    1..4
  *   Long:          4294967299
+ *  UPDATE:
+ *      After more experimentation, this is also the case in [Cbor]. Serializing as 2 [Int]s becomes astronomically MORE advantageous vs. 1 [Long]
+ *      when the [packed] is refactored to be a pair of [start] + [length] instead of [start] + [endInclusive].
  */
 @Serializable
 @JvmInline

@@ -1,7 +1,10 @@
 package brava.fightinwords.botlin
 
+import kotlin.math.min
+
+@PublishedApi
 internal object ListImplementation {
-    private inline fun <E> createList(
+    inline fun <E> createList(
         size: Int,
         crossinline getter: (Int) -> E,
     ): AbstractList<E> {
@@ -34,29 +37,41 @@ internal object ListImplementation {
             .subList(start, endExclusive)
     }
 
-    fun <T : Comparable<T>> compareElements(
-        a: List<T>,
-        b: List<T>,
+    inline fun lexicographicalCompare(
+        aSize: Int,
+        bSize: Int,
+        compareIndex: (index: Int) -> Int,
     ): Int {
-        if (a === b) {
-            return 0
-        }
-
-        val lengthCompare = a.size.compareTo(b.size)
-
-        val shorter = when {
-            lengthCompare < 0 -> a.size
-            else              -> b.size
-        }
-
-        for (i in 0 until shorter) {
-            val comparison = a[i].compareTo(b[i])
-            if (comparison != 0) {
-                return comparison
+        val shorter = min(aSize, bSize)
+        for (i in 0..shorter) {
+            val indexComparison = compareIndex(i)
+            if (indexComparison != 0) {
+                return indexComparison
             }
         }
 
-        return lengthCompare
+        return aSize.compareTo(bSize)
+    }
+
+    inline fun shortlexCompare(
+        aSize: Int,
+        bSize: Int,
+        compareIndex: (index: Int) -> Int,
+    ): Int {
+        val sizeCompare = aSize.compareTo(bSize)
+        if (sizeCompare != 0) {
+            return sizeCompare
+        }
+
+        // We could call `lexicographicalCompare` here, but that would incur a redundant `min` call
+        for (i in 0..aSize) {
+            val indexComparison = compareIndex(i)
+            if (indexComparison != 0) {
+                return indexComparison
+            }
+        }
+
+        return 0
     }
 
     inline fun <T> containsAllElementsOf(
@@ -226,6 +241,7 @@ internal object ListImplementation {
         )
     }
 
+    @PublishedApi
     internal inline fun processNonEmpty(
         start: Int,
         endInclusive: Int,

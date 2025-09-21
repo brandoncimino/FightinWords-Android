@@ -47,6 +47,12 @@ fun ByteSlice.toUtf8String(
     return toByteBuffer(start, endInclusive).toUtf8String()
 }
 
+fun ByteSlice.toUtf8String(
+    tinyRange: TinyRange,
+): String {
+    return toUtf8String(tinyRange.start, tinyRange.endInclusive)
+}
+
 private val threadLocalUtf8Decoder : ThreadLocal<CharsetDecoder> = ThreadLocal.withInitial { StandardCharsets.UTF_8.newDecoder() }
 
 /**

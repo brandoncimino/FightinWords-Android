@@ -2,6 +2,7 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.botlin.TinyFlags
+import brava.fightinwords.gameplay.data.Word.Companion.indices
 import com.google.common.primitives.ImmutableIntArray
 
 /**

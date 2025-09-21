@@ -2,9 +2,7 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.lastIndex
-import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
-import brava.fightinwords.gameplay.data.TinyWordCharSequence.Companion.asCharSequence
-import kotlinx.serialization.Serializable
+import brava.fightinwords.gameplay.data.Word.Companion.indices
 import org.jetbrains.annotations.ApiStatus
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -14,9 +12,24 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
 
+/**
+ * > # TL;DR:
+ * > Serialize as [Word] or _(rarely)_ [packed].
+ *
+ * A [brava.fightinwords.gameplay.data.TinyWord] could be serialized in two ways:
+ * - The [packed] value
+ * - The [toString] representation
+ *
+ * Because they are roughly equivalent, the [toString] representation should be preferred, by explicitly casting to [Word].
+ *
+ * The one exception to this is:
+ * - You are using a [kotlinx.serialization.BinaryFormat]
+ * - You have a collection of exclusively [brava.fightinwords.gameplay.data.TinyWord]s
+ *
+ * In this scenario, you can avoid a lot of boxing by serializing the [packed] values as a specialized collection like [LongArray].
+ */
 @ApiStatus.Experimental
 @JvmInline
-@Serializable
 value class TinyWord(val packed: Long) : Word {
     override val length: Int
         get() = (packed and 0b1111).toInt()
@@ -28,34 +41,8 @@ value class TinyWord(val packed: Long) : Word {
         return 'a'.code + charBits
     }
 
-    fun getCharacter(index: Int): Char {
-        return unpackLetter(index).toInt().toChar()
-    }
-
     override fun get(index: Int): TinyLetter {
         return TinyLetter.createUnsafe(unpackLetter(index).toByte())
-    }
-
-    override fun contains(element: Letter): Boolean {
-        return when (element) {
-            is TinyLetter -> super.contains(element)
-            else -> false
-        }
-    }
-
-    override fun subList(fromIndex: Int, toIndex: Int): TinyWord {
-        val subLength = toIndex - fromIndex
-
-        var hash = 0L
-
-        for (i in fromIndex until toIndex) {
-            val letter = get(i)
-            hash = hash.packLetter(letter.byteValue)
-        }
-
-        hash = hash.packLength(subLength)
-
-        return TinyWord(hash)
     }
 
     inline fun forEach(action: (TinyLetter) -> Unit) {
@@ -85,7 +72,6 @@ value class TinyWord(val packed: Long) : Word {
 
         fun of(tinyLetters: Iterable<TinyLetter>): TinyWord {
             return when (tinyLetters) {
-                is TinyWord -> tinyLetters
                 is Collection<TinyLetter> -> fromCollection(tinyLetters)
                 else -> {
                     var length = 0
@@ -104,6 +90,9 @@ value class TinyWord(val packed: Long) : Word {
         fun of(charSequence: CharSequence): TinyWord {
             return TinyWord(packAZ(charSequence));
         }
+
+        fun CharSequence.toTinyWord() = of(this)
+
 
         internal inline fun extractTinyWordFromRange(
             wordDelimiter: Byte,
@@ -239,10 +228,6 @@ value class TinyWord(val packed: Long) : Word {
         }
 
         internal fun Iterable<Letter>.tryGetTinyLetters(): TinyWord? {
-            if (this is TinyWord) {
-                return this
-            }
-
             var hash = 0L
             var length = 0
             for (letter in this) {
@@ -259,120 +244,5 @@ value class TinyWord(val packed: Long) : Word {
             hash = hash.packLength(length)
             return TinyWord(hash)
         }
-
-        inline fun TinyWord.forEachLetter(
-            action: (TinyLetter) -> Unit,
-        ) {
-            for (i in 0 until length) {
-                action(get(i))
-            }
-        }
     }
-
-    override fun iterator(): Iterator<TinyLetter> {
-        return iterator {
-            for (i in indices) {
-                yield(get(i))
-            }
-        }
-    }
-}
-
-@JvmInline
-value class TinyWordCharSequence(val word: TinyWord) : CharSequence {
-    override val length: Int
-        get() = word.length // each letter in a TinyWord is exactly 1 Char
-
-    override fun get(index: Int): Char {
-        return word[index].character
-    }
-
-    override fun subSequence(startIndex: Int, endIndex: Int): TinyWordCharSequence {
-        var hash = 0L
-        for (i in startIndex until endIndex) {
-            val c = word.getCharacter(i)
-            hash = (hash shl 5) or (c - 'a').toLong()
-        }
-        hash = (hash shl 4) or (endIndex - startIndex).toLong()
-        return TinyWordCharSequence(TinyWord(hash))
-    }
-
-    companion object {
-        fun TinyWord.asCharSequence() = TinyWordCharSequence(this)
-    }
-}
-
-@ApiStatus.Experimental
-@JvmInline
-value class TinyWordLetters(val word: TinyWord) : List<Letter> {
-    override val size: Int
-        get() = word.length
-
-    override fun isEmpty(): Boolean {
-        return word.length == 0
-    }
-
-    override fun contains(element: Letter): Boolean {
-        return word.contains(element)
-    }
-
-    override fun iterator(): Iterator<Letter> {
-        // TODO: Optimize with a dedicated `TinyWordLetterIterator` type
-        return iterator {
-            for (i in 0..word.length) {
-                yield(word.get(i))
-            }
-        }
-    }
-
-    override fun containsAll(elements: Collection<Letter>): Boolean {
-        return elements.all { contains(it) }
-    }
-
-    override fun get(index: Int): Letter {
-        return word.getCharacter(index).toLetter()
-    }
-
-    override fun indexOf(element: Letter): Int {
-        for(i in indices){
-            if (word.get(i) == element) {
-                return i
-            }
-        }
-
-        return -1
-    }
-
-    override fun lastIndexOf(element: Letter): Int {
-        for(i in indices.reversed()){
-            if (word.get(i) == element) {
-                return i
-            }
-        }
-
-        return -1
-    }
-
-    override fun listIterator(): ListIterator<Letter> {
-        return listIterator(0)
-    }
-
-    override fun listIterator(index: Int): ListIterator<Letter> {
-        return object : AbstractList<Letter>(){
-            override val size: Int
-                get() = word.length
-
-            override fun get(index: Int): Letter {
-                return word.get(index)
-            }
-        }.listIterator(index)
-    }
-
-    override fun subList(
-        fromIndex: Int,
-        toIndex: Int,
-    ): TinyWordLetters {
-        return TinyWordLetters(word.asCharSequence().subSequence(fromIndex, toIndex).word)
-    }
-
 }

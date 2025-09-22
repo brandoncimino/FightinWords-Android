@@ -55,13 +55,11 @@ class MainActivity : ComponentActivity() {
      * ```
      */
     val naspaWordList by lazy {
-        val nwlFile = getCachedAssetFile("en/NWL2023.txt")
-        return@lazy NaspaWordList(nwlFile)
+        return@lazy NaspaWordList(getCachedAssetBytes("en/NWL2023.txt"))
     }
 
     val definitionsCsvLookup by lazy {
-        val csvFile = getCachedAssetFile("en/definitions.csv")
-        return@lazy DefinitionsCsvLookup(csvFile)
+        return@lazy DefinitionsCsvLookup(getCachedAssetBytes("en/definitions.csv"))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

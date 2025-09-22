@@ -1,32 +1,63 @@
 package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.botlin.ByteSlice
+import brava.fightinwords.botlin.TinyRange.Companion.isEmpty
 import brava.fightinwords.botlin.utf8
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
-import java.io.File
+import brava.fightinwords.gameplay.data.Word
 
-class DefinitionsCsvLookup private constructor(
-    entries: LongMappedLines,
+fun DefinitionsCsvLookup(
+    bytes: ByteSlice,
+) = DefinitionsCsvLookup(
+    DefinitionsCsvLookup.parseWordLineRanges(bytes),
+    bytes
+)
+
+class DefinitionsCsvLookup(
+    val index: ShortlexWordListIndex,
+    private val bytes: ByteSlice,
     private val language: KnownLanguage = KnownLanguage.English,
-) : MemoryMappedDefinitionLookup(entries) {
-    constructor(file: File) : this(parseWordLineRanges(file))
+) : DefinitionLookup, WordLookup {
+    override fun findDefinition(word: Word): WordDefinition? {
+        return when (word) {
+            is TinyWord -> findDefinition(word)
+            else        -> null
+        }
+    }
 
-    override fun parseLine(rawEntry: ByteSlice): WordDefinition {
-        return WordLookupHelpers.parseDefinitionCsvLine(rawEntry.toByteBuffer().utf8(), language)
+    fun findDefinition(tinyWord: TinyWord): WordDefinition? {
+        val range = index.entries.findRange(tinyWord)
+
+        if (range.isEmpty) {
+            return null
+        }
+
+        val rawEntry = bytes.slice(range)
+        return WordLookupHelpers.parseDefinitionCsvLine(
+            // TODO: this is super gross
+            rawEntry.toByteBuffer().utf8(),
+            language
+        )
+    }
+
+    override fun isWord(word: Word): Boolean {
+        return word is TinyWord && index.entries.containsWord(word)
     }
 
     companion object {
         private val commaByte: Byte = ','.code.toByte()
-        private fun parseWordLineRanges(file: File) = LongMappedLines.create(
-            file,
-            { buffer, lineStart, lineEndInclusive ->
+        internal fun parseWordLineRanges(
+            bytes: ByteSlice,
+        ) = ShortlexWordListIndex.build(
+            bytes,
+            { lineStart, lineEndInclusive ->
                 TinyWord.extractTinyWordFromRange(
                     commaByte,
                     lineStart,
                     lineEndInclusive,
-                    buffer::get
-                ).packed
+                    bytes::get
+                )
             }
         )
     }

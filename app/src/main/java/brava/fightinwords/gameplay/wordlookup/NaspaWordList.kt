@@ -1,99 +1,97 @@
 package brava.fightinwords.gameplay.wordlookup
 
-import androidx.collection.IntIntMap
-import androidx.collection.MutableIntIntMap
-import androidx.collection.mutableIntIntMapOf
 import brava.fightinwords.botlin.ByteSlice
+import brava.fightinwords.botlin.TinyRange.Companion.isEmpty
+import brava.fightinwords.botlin.fastSlice
+import brava.fightinwords.botlin.getMemoryMappedBuffer
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
-import brava.fightinwords.gameplay.wordlookup.LongMappedLines.Companion.getMemoryMappedBuffer
+import com.google.common.base.Stopwatch
 import java.io.File
-import java.nio.ByteBuffer
 
 fun NaspaWordList(
     file: File,
 ): NaspaWordList {
-    return NaspaWordList(file.getMemoryMappedBuffer())
+    val stopwatch = Stopwatch.createStarted()
+    val nwl = NaspaWordList(file.getMemoryMappedBuffer().fastSlice())
+    val elapsed = stopwatch.elapsed()
+    println("Loaded $file in $elapsed")
+    return nwl
 }
 
 fun NaspaWordList(
-    bytes: ByteBuffer,
+    bytes: ByteSlice,
 ): NaspaWordList {
-    val wordLengthCounts = mutableIntIntMapOf()
-
-    val longMappedLines = NaspaWordList.parseWordLineRanges(
+    val index = parseWordLineRanges(
         bytes,
-        wordLengthCounts
     )
 
-    return NaspaWordList(longMappedLines, wordLengthCounts)
+    return NaspaWordList(index, bytes)
 }
 
-class NaspaWordList internal constructor(
-    entries: LongMappedLines,
-    wordLengthCounts: IntIntMap,
-) : WordMappedLines(entries, wordLengthCounts), ShortlexWordList {
-    override fun parseLine(
-        rawEntry: ByteSlice,
-    ): WordDefinition {
-        return NaspaWordListEntry.parse(rawEntry).toWordDefinition()
+class NaspaWordList(
+    val index: ShortlexWordListIndex,
+    private val bytes: ByteSlice,
+) : DefinitionLookup, ShortlexWordList {
+    override fun getCountOfWordsWithLength(wordLength: Int): Int =
+        index.wordLengthCounts[wordLength]
+
+    override val wordCount: Int = run {
+        var sum = 0
+        index.wordLengthCounts.forEachValue { sum += it }
+        sum
     }
-
-    override fun getCountOfWordsWithLength(wordLength: Int): Int = wordLengthCounts[wordLength]
-
-    override val wordCount: Int
-        get() = TODO("Not yet implemented")
 
     override fun getWordByIndex(wordIndex: Int): Word {
         TODO("Not yet implemented")
     }
 
+    fun findEntry(word: Word): NaspaWordListEntry? {
+        return when (word) {
+            is TinyWord -> findEntry(word)
+            else        -> null
+        }
+    }
+
+    fun findRawEntry(word: TinyWord): ByteSlice? {
+        val range = index.entries.findRange(word)
+        return when {
+            range.isEmpty -> null
+            else          -> bytes.slice(range)
+        }
+    }
+
     fun findEntry(word: TinyWord): NaspaWordListEntry? {
-        val line = entries.findLine(word.packed)
-        return line?.let {
+        return findRawEntry(word)?.let {
             NaspaWordListEntry.parse(it)
         }
     }
 
-    companion object {
-        private const val spaceByte: Byte = ' '.code.toByte()
+    override fun findDefinition(word: Word): WordDefinition? {
+        return findEntry(word)?.toWordDefinition()
+    }
 
-        internal fun parseWordLineRanges(
-            bytes: ByteBuffer,
-            wordLengthCounts: MutableIntIntMap,
-        ): LongMappedLines {
-            return LongMappedLines.create(
-                bytes
-            ) { buffer, lineStart, lineEndInclusive ->
-                val word = TinyWord.extractTinyWordFromRange(
-                    spaceByte,
-                    lineStart,
-                    lineEndInclusive,
-                    buffer::get
-                )
-
-                wordLengthCounts[word.length] = wordLengthCounts.getOrDefault(word.length, 0) + 1
-                return@create word.packed
-            }
+    override fun isWord(word: Word): Boolean {
+        return when (word) {
+            is TinyWord -> isWord(word)
+            else        -> false
         }
+    }
+
+    fun isWord(word: TinyWord): Boolean {
+        return index.entries.containsWord(word)
     }
 }
 
-sealed class WordMappedLines(
-    entries: LongMappedLines,
-    val wordLengthCounts: IntIntMap,
-) : MemoryMappedDefinitionLookup(entries), ShortlexWordList {
-    companion object {
-        inline fun parseWordLineRanges(
-            file: File,
-            wordLengthCounts: MutableIntIntMap,
-            wordExtractor: (buffer: ByteBuffer, lineStart: Int, lineEndInclusive: Int) -> TinyWord,
-        ): LongMappedLines {
-            return LongMappedLines.create(file) { buffer, lineStart, lineEndInclusive ->
-                val word = wordExtractor(buffer, lineStart, lineEndInclusive)
-                wordLengthCounts[word.length] = wordLengthCounts.getOrDefault(word.length, 0) + 1
-                return@create word.packed
-            }
-        }
+private fun parseWordLineRanges(
+    bytes: ByteSlice,
+): ShortlexWordListIndex {
+    return ShortlexWordListIndex.build(bytes) { lineStart, lineEndInclusive ->
+        TinyWord.extractTinyWordFromRange(
+            ' '.code.toByte(),
+            lineStart,
+            lineEndInclusive,
+            bytes::get
+        )
     }
 }

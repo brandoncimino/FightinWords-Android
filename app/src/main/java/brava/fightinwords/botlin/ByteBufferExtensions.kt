@@ -5,12 +5,12 @@ import java.nio.CharBuffer
 import java.nio.charset.CharsetDecoder
 import java.nio.charset.StandardCharsets
 
-inline fun ByteBuffer.forEachLineRange(
+inline fun ByteSlice.forEachLineRange(
     action: (start: Int, endInclusive: Int) -> Unit,
 ) {
     var lineStart = 0
     var pos = 0
-    while (pos < limit()) {
+    while (pos < size) {
         val current = get(pos)
         if (current == '\n'.code.toByte()) {
             action(lineStart, pos - 1)
@@ -20,7 +20,7 @@ inline fun ByteBuffer.forEachLineRange(
         pos += 1
     }
 
-    action(lineStart, limit() - 1)
+    action(lineStart, lastIndex)
 }
 
 fun ByteBuffer.utf8() : CharBuffer {

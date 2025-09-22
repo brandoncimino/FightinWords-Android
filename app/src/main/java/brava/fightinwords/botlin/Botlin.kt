@@ -1,6 +1,10 @@
 package brava.fightinwords.botlin
 
 import android.util.Log
+import java.io.File
+import java.io.RandomAccessFile
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 import kotlin.reflect.KProperty
 
 inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String? = javaClass.simpleName, message: () -> Any?) {
@@ -99,4 +103,10 @@ fun <T : Comparable<T>> T.constrain(
     }
 
     return this
+}
+
+fun File.getMemoryMappedBuffer(): MappedByteBuffer {
+    val randomAccessFile = RandomAccessFile(this, "r")
+    val channel = randomAccessFile.channel
+    return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
 }

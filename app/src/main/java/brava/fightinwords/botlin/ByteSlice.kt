@@ -40,11 +40,12 @@ data class ByteSlice(
                 endInclusive - start + 1
             )
         } else {
+//            throw UnsupportedOperationException("I don't support ${Build.VERSION.SDK_INT}")
             // You've got an old phone; deal with the extra memory overhead while I copy everything into a fresh byte array
             val length = endInclusive - start + 1
             val byteArray = ByteArray(length)
             for (i in 0..byteArray.lastIndex) {
-                byteArray[i] = get(start + 1)
+                byteArray[i] = get(start + i)
             }
 
             return ByteBuffer.wrap(byteArray)

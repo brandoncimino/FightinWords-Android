@@ -140,4 +140,4 @@ inline fun <reified T : Appendable> T.appendUtf8(
 fun String.utf8Bytes(
     start: Int = 0,
     endInclusive: Int = lastIndex,
-): ByteBuffer = ByteBuffer.wrap(encodeToByteArray(start, endInclusive + 1, true))
+): ByteSlice = ByteBuffer.wrap(encodeToByteArray(start, endInclusive + 1, true)).fastSlice()

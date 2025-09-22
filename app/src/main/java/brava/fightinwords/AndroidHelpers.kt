@@ -2,7 +2,10 @@ package brava.fightinwords
 
 import android.content.Context
 import android.os.Bundle
+import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.blog
+import brava.fightinwords.botlin.fastSlice
+import brava.fightinwords.botlin.getMemoryMappedBuffer
 import kotlinx.serialization.BinaryFormat
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.StringFormat
@@ -11,6 +14,10 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.encodeToString
 import java.io.File
+
+internal fun Context.getCachedAssetBytes(assetName: String): ByteSlice {
+    return getCachedAssetFile(assetName).getMemoryMappedBuffer().fastSlice()
+}
 
 internal fun Context.getCachedAssetFile(assetName: String): File {
     val cacheFile = File(this.cacheDir, assetName)

@@ -20,6 +20,7 @@ class GameInProgress(
     val gamePlan: GamePlan,
     val typesetter: Typesetter,
     val ledgerman: Ledgerman,
+    val definitionLookup: DefinitionLookup,
     val onStatePossiblyChanged: () -> Unit = {},
 ) {
     inline val umpire inline get() = ledgerman.umpire
@@ -35,27 +36,28 @@ class GameInProgress(
             definitionLookup: DefinitionLookup,
             onStatePossiblyChanged: () -> Unit = {},
         ): GameInProgress {
-            val wordPoolDefinitions = wordPool.map { definitionLookup.requireDefinition(it) }
-
             return GameInProgress(
                 gamePlan = gamePlan,
                 typesetter = Typesetter(gamePlan.letterPool),
                 ledgerman = Ledgerman(
                     unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
                     wordLengthRange = gamePlan.wordLengthRange,
-                    umpire = Umpire(wordPoolDefinitions, wordScorer)
+                    umpire = Umpire(wordPool, wordScorer)
                 ),
+                definitionLookup = definitionLookup,
                 onStatePossiblyChanged = onStatePossiblyChanged
             )
         }
 
         fun resumeGame(
-            saveGameState: SaveGameState
+            saveGameState: SaveGameState,
+            definitionLookup: DefinitionLookup,
         ): GameInProgress {
             return GameInProgress(
                 saveGameState.gamePlan,
                 Typesetter.load(saveGameState),
-                Ledgerman.load(saveGameState)
+                Ledgerman.load(saveGameState),
+                definitionLookup
             )
         }
     }
@@ -68,12 +70,16 @@ class GameInProgress(
         )
     }
 
-    fun submitGalley(): Umpire.SubmissionResult {
+    fun submitGalley(): SubmissionResult {
         val submittedWord = typesetter.submitAndClear()
         val submissionResult = umpire.submitWord(submittedWord)
-        if (submissionResult.wordState is DefinedWordState) {
-            ledgerman.focusOnWord(submissionResult.wordState)
+
+        if (submissionResult is SubmissionResult.Accepted) {
+            val definition = definitionLookup.requireDefinition(submissionResult.word)
+            val wordState = Accepted(definition, submissionResult.points)
+            ledgerman.focusOnWord(wordState)
         }
+
         onStatePossiblyChanged()
         return submissionResult
     }

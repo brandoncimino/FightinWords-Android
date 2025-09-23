@@ -4,6 +4,7 @@ import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
 import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.Word.Companion.indices
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import kotlinx.serialization.Serializable
 import java.util.Comparator.comparing
@@ -18,6 +19,14 @@ class Typesetter(
      */
     constructor(progenitorPool: Iterable<Letter>) : this(
         progenitorPool.map { Slug(it) }
+    )
+
+    constructor(progenitorPool: Word) : this(
+        buildList<Slug> {
+            for (i in progenitorPool.indices) {
+                add(Slug(progenitorPool[i]))
+            }
+        }
     )
 
     /**

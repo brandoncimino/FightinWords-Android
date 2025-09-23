@@ -54,6 +54,12 @@ value class TinyWord(val packed: Long) : Word {
     companion object {
         const val MAX_PACK = 12
 
+        @PublishedApi
+        internal const val emptyPacked = (0L shl 4) or 0.toLong()
+
+        @JvmStatic
+        val empty inline get() = TinyWord(emptyPacked)
+
         fun of(
             bytes: ByteSlice,
             start: Int = 0,
@@ -93,12 +99,17 @@ value class TinyWord(val packed: Long) : Word {
 
         fun CharSequence.toTinyWord() = of(this)
 
+        enum class LongWordHandling {
+            Error,
+            Skip
+        }
 
         internal inline fun extractTinyWordFromRange(
             wordDelimiter: Byte,
             start: Int,
             endInclusive: Int,
             getter: (index: Int) -> Byte,
+            longWordHandling: LongWordHandling = LongWordHandling.Error,
         ): TinyWord {
             var hash = 0L
             var pos = start
@@ -110,12 +121,20 @@ value class TinyWord(val packed: Long) : Word {
                 } else {
                     hash = hash.packLetter(current)
                     pos += 1
-                    require(pos - start <= MAX_PACK) {
-                        "Reached the ${TinyWord::class.java} length limit of $MAX_PACK at the index $pos (byte: $current, char: ${
-                            current.toInt().toChar()
-                        }) without reaching either the delimiter (${
-                            wordDelimiter.toInt().toChar()
-                        }) OR the end of the range (at index $endInclusive, inclusive)"
+                    if (pos - start >= MAX_PACK) {
+                        when (longWordHandling) {
+                            LongWordHandling.Error -> throw rejectLongWord(
+                                pos,
+                                current,
+                                wordDelimiter,
+                                endInclusive
+                            )
+
+                            LongWordHandling.Skip  -> {
+                                println("SKIPPING a word that's TOO LONG: pos $pos - start $start = ${pos - start}")
+                                return empty
+                            }
+                        }
                     }
                 }
             }
@@ -123,6 +142,21 @@ value class TinyWord(val packed: Long) : Word {
             val length = pos - start
             hash = hash.packLength(length)
             return TinyWord(hash)
+        }
+
+        internal fun rejectLongWord(
+            pos: Int,
+            current: Byte,
+            wordDelimiter: Byte,
+            endInclusive: Int,
+        ): RuntimeException {
+            return IllegalStateException(
+                "Reached the ${TinyWord::class.java} length limit of $MAX_PACK at the index $pos (byte: $current, char: ${
+                    current.toInt().toChar()
+                }) without reaching either the delimiter (`${
+                    wordDelimiter.toInt().toChar()
+                }`) OR the end of the range (at index $endInclusive, inclusive)"
+            )
         }
 
         private fun fromCollection(letters: Collection<TinyLetter>): TinyWord {
@@ -151,7 +185,7 @@ value class TinyWord(val packed: Long) : Word {
         private fun Long.packLowerAz(lowerAz: Byte) : Long = packLong((lowerAz - aByte).toLong())
         private fun Long.packLetter(letter: Char): Long = packLowerAz(letter.toLowerAz())
         private fun Long.packLetter(letter: Byte): Long = packLowerAz(letter.toLowerAz())
-        private fun Long.packLength(length: Int): Long = (this shl 4) or length.toLong()
+        internal fun Long.packLength(length: Int): Long = (this shl 4) or length.toLong()
 
         private inline fun packAZ(
             getter: (Int) -> Byte,

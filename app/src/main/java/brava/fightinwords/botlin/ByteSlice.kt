@@ -2,7 +2,7 @@ package brava.fightinwords.botlin
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import brava.fightinwords.botlin.TinyRange.Companion.length
+import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import com.google.common.base.Preconditions
 import java.nio.ByteBuffer
 
@@ -22,7 +22,7 @@ data class ByteSlice(
         source: ByteBuffer,
         start: Int,
         endInclusive: Int,
-    ) : this(source, TinyRange(start, endInclusive))
+    ) : this(source, TinyRange.startEndInclusive(start, endInclusive))
 
     val size inline get() = rangeInSource.length
 

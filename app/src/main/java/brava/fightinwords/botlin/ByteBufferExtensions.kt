@@ -1,5 +1,6 @@
 package brava.fightinwords.botlin
 
+import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CharsetDecoder

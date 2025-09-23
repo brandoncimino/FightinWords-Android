@@ -2,7 +2,7 @@ package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.gameplay.data.Word
 
-fun interface DefinitionLookup {
+interface DefinitionLookup : WordLookup {
     fun findDefinition(word: Word): WordDefinition?
 
     companion object {

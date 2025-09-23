@@ -3,13 +3,19 @@ package brava.fightinwords.gameplay.mixedbags
 import androidx.collection.LongList
 import androidx.collection.MutableLongList
 import androidx.collection.mutableLongListOf
+import brava.fightinwords.botlin.serialization.LongListSerializer
+import kotlinx.serialization.Serializable
+import org.jetbrains.annotations.ApiStatus
 
 /**
  * A silly attempt to reduce boxing allocations by segregating primitive [longs] from [objects]
  */
+@ApiStatus.Experimental
 @PublishedApi
+@Serializable
 internal sealed class LongObjectMixedBag<T>(
     @PublishedApi
+    @Serializable(LongListSerializer::class)
     internal open val longs: LongList,
     @PublishedApi
     internal open val objects: List<T>,
@@ -33,8 +39,10 @@ internal sealed class LongObjectMixedBag<T>(
         }
     }
 
-    fun <T> build(action: Builder<T>.() -> Unit): LongObjectMixedBag<T> {
-        return Builder<T>().apply(action).build()
+    companion object {
+        fun <T> build(action: Builder<T>.() -> Unit): LongObjectMixedBag<T> {
+            return Builder<T>().apply(action).build()
+        }
     }
 
     inline fun forEach(

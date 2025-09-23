@@ -10,8 +10,7 @@ data class WordDefinition(
     val language: KnownLanguage,
     val partOfSpeech: String?,
     val definition: String,
-    val isNaspaWord: Boolean,
-    val substitutions: List<WordDefinitionSubstitution> = listOf()
+    val source: WordSource,
 )
 
 sealed interface WordDefinitionSubstitution {

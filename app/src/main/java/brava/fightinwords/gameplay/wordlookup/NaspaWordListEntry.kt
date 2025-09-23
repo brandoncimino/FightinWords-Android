@@ -4,6 +4,7 @@ import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.botlin.Substring.Companion.fastSlice
 import brava.fightinwords.botlin.TinyRange
+import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import brava.fightinwords.botlin.forEachWrappedRange
 import brava.fightinwords.botlin.indexOf
@@ -154,8 +155,7 @@ data class NaspaWordListEntry internal constructor(
             partOfSpeech =
                 rawEntry.slice(partOfSpeechRange).toUtf8String(),
             definition = definitionSlice.toUtf8String(),
-            isNaspaWord = true,
-            substitutions = parseSubstitutions(definitionSlice)
+            source = WordSource.NaspaWordList2023
         )
     }
 }

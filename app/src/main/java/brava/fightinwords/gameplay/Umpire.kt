@@ -7,79 +7,72 @@ import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
-import brava.fightinwords.gameplay.wordlookup.WordDefinition
 import kotlinx.serialization.Serializable
 
 /**
  * Decides what is and isn't legal.
  */
 class Umpire private constructor(
-    private val wordStates: MutableMap<Word, WordState>,
+    private val wordStates: MutableMap<Word, WordStateFlavor>,
     private val wordScorer: WordScorer = ScrabbleScorer,
-    private val language: KnownLanguage = KnownLanguage.English
+    private val language: KnownLanguage = KnownLanguage.English,
 ) {
     constructor(
-        wordPool: Sequence<WordDefinition>,
+        wordPool: Sequence<Word>,
         wordScorer: WordScorer,
-        language: KnownLanguage = KnownLanguage.English
+        language: KnownLanguage = KnownLanguage.English,
     ) : this(
-        wordStates = wordPool.toWordStatesMap(),
-        wordScorer = wordScorer,
-        language = language
-    )
-
-    constructor(
-        wordStates: Iterable<WordState>,
-        wordScorer: WordScorer = ScrabbleScorer,
-        language: KnownLanguage = KnownLanguage.English
-    ) : this(
-        wordStates = wordStates.toWordStatesMap(),
+        wordStates = wordPool.associateWithTo(mutableMapOf()) {
+            WordStateFlavor.Unplayed
+        },
         wordScorer = wordScorer,
         language = language
     )
 
     companion object : EmployeeFactory<Umpire, SerializableState> {
-        private fun Iterable<WordState>.toWordStatesMap(): MutableMap<Word, WordState> {
-            return this
-                .sortedBy { it.word.length /*TODO: sorting should be stricter and depend on the current `GamePlan`, i.e. probably not be the responsibility of the `Umpire`*/ }
-                .associateByTo(mutableMapOf()) { it.word }
-        }
-
-
-        private fun Sequence<WordDefinition>.toWordStatesMap(): MutableMap<Word, WordState> {
-            return this
-                .sortedBy { it.word.length /*TODO: sorting should be stricter and depend on the current `GamePlan`, i.e. probably not be the responsibility of the `Umpire`*/ }
-                .associateTo(mutableMapOf()) {
-                    it.word to Unplayed(it)
-                }
-        }
-
         override fun Umpire.getSerializableState(): SerializableState {
-            return SerializableState(snapshot())
+            val flavorMap = buildMap {
+                wordStates.forEach { (word, flavor) ->
+                    val flavorGroup = getOrPut(flavor, { mutableListOf<Word>() })
+                    flavorGroup.add(word)
+                }
+            }
+
+            return SerializableState(flavorMap)
         }
 
         override fun fromSerializableState(
             state: SerializableState,
-            gamePlan: GamePlan
+            gamePlan: GamePlan,
         ): Umpire {
-            return Umpire(state.wordStates)
+            return Umpire(
+                state.flavorMap.reverseTo(mutableMapOf())
+            )
         }
 
-        override fun SaveGameState.getEmployeeState(): SerializableState = ledgermanState.umpireState
+        override fun SaveGameState.getEmployeeState(): SerializableState =
+            ledgermanState.umpireState
     }
 
     init {
-        blog { "Created ${this.javaClass.simpleName} with a pool of ${wordStates.size} playable words (${wordStates.count { it is DefinedWordState && it.wordDefinition.isNaspaWord }} NASPA standard)" }
+        blog { "Created ${this.javaClass.simpleName} with a pool of ${wordStates.size} playable words (${wordStates.count { it is DefinedWordState && it.wordDefinition.source.isNaspa }} NASPA standard)" }
     }
+
+    private fun getScore(word: Word): Int = wordScorer.getScore(word, language)
 
     fun submitWord(word: Word): SubmissionResult {
         blog(Log.DEBUG) { "Submitting word $word" }
         val previousState = wordStates[word]
 
         val result = when (previousState) {
-            is Accepted -> SubmissionResult(Freshness.Stale, previousState)
-            is Unplayed -> acceptFreshWord(previousState)
-            is Rejected -> SubmissionResult(Freshness.Stale, previousState)
+            WordStateFlavor.Accepted -> SubmissionResult.Accepted(
+                word,
+                Freshness.Stale,
+                getScore(word)
+            )
+
+            WordStateFlavor.Unplayed -> acceptFreshWord(word)
+            WordStateFlavor.Rejected -> SubmissionResult.Rejected(word, Freshness.Stale)
             null -> rejectFreshWord(word)
         }
 
@@ -87,52 +80,20 @@ class Umpire private constructor(
         return result
     }
 
-    fun getCurrentState(word: Word): WordState? = wordStates[word]
-
-    private fun acceptFreshWord(unplayedWord: Unplayed): SubmissionResult {
-        check(wordStates[unplayedWord.word] == unplayedWord)
-        val accepted = Accepted(unplayedWord.wordDefinition, wordScorer.getScore(unplayedWord.word, language))
-        wordStates[unplayedWord.word] = accepted
-//        refreshState()
-        return SubmissionResult(Freshness.Fresh, accepted)
-    }
-
-    private fun rejectFreshWord(word: Word): SubmissionResult {
-        check(wordStates.contains(word) == false)
-        val rejected = Rejected(word)
-        wordStates[word] = rejected
-//        refreshState()
-        return SubmissionResult(Freshness.Fresh, rejected)
-    }
-
-    data class SubmissionResult(
-        val freshness: Freshness,
-        val wordState: WordState,
-    )
-
-    fun snapshot(): List<WordState> {
-        return wordStates.values.toList()
-    }
-
-    private fun DefinedWordState.isVisible(visibility: UnsubmittedWordVisibility): Boolean {
-        return when (this) {
-            is Accepted -> true
-            else ->
-                when (visibility) {
-                    UnsubmittedWordVisibility.None -> false
-                    UnsubmittedWordVisibility.Standard -> this.wordDefinition.isNaspaWord
-                    UnsubmittedWordVisibility.All -> true
-                }
+    private fun acceptFreshWord(unplayedWord: Word): brava.fightinwords.gameplay.SubmissionResult {
+        check(wordStates[unplayedWord] == WordStateFlavor.Unplayed) {
+            "The word `$unplayedWord` doesn't have the state ${WordStateFlavor.Unplayed}"
         }
+
+        wordStates[unplayedWord] = WordStateFlavor.Accepted
+        return SubmissionResult.Accepted(unplayedWord, Freshness.Fresh, getScore(unplayedWord))
     }
 
-    fun visibleWords(unsubmittedWordVisibility: UnsubmittedWordVisibility): List<DefinedWordState> {
-        val visibles = wordStates.values
-            .filterIsInstance<DefinedWordState>()
-            .filter { it.isVisible(unsubmittedWordVisibility) }
+    private fun rejectFreshWord(word: Word): brava.fightinwords.gameplay.SubmissionResult {
+        check(wordStates.contains(word) == false) { "The word `$word` can't be rejected fresh because it's already been submitted." }
 
-        blog(Log.DEBUG) { "Returning ${visibles.size} visible words" }
-        return visibles
+        wordStates[word] = WordStateFlavor.Rejected
+        return SubmissionResult.Rejected(word, Freshness.Fresh)
     }
 
     @Serializable
@@ -154,7 +115,7 @@ class Umpire private constructor(
         //     + Fastest when switching to/from the app
         //     - Slowest when submitting each word
         //       ~ A "hybrid" version, that asynchronously **starts** option 🅱️, then waits for specifically requested definitions, could speed this up
-        val wordStates: List<WordState>
+        val flavorMap: Map<WordStateFlavor, List<Word>>,
     )
 }
 
@@ -169,3 +130,12 @@ enum class Freshness {
     Stale
 }
 
+private fun <K, V, M : MutableMap<V, K>> Map<K, Iterable<V>>.reverseTo(destination: M): M {
+    forEach { (flavor, words) ->
+        words.forEach {
+            destination.put(it, flavor)
+        }
+    }
+
+    return destination
+}

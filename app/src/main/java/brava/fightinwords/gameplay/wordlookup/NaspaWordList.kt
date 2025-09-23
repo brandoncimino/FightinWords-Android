@@ -91,7 +91,8 @@ private fun parseWordLineRanges(
             ' '.code.toByte(),
             lineStart,
             lineEndInclusive,
-            bytes::get
+            bytes::get,
+            TinyWord.Companion.LongWordHandling.Skip
         )
     }
 }

@@ -29,4 +29,4 @@ data class Rejected(override val word: Word) : WordState
 @Serializable
 data class Accepted(override val wordDefinition: WordDefinition, val points: Int) : DefinedWordState
 
-val DefinedWordState.isBonusWord get() = !wordDefinition.isNaspaWord
+val DefinedWordState.isBonusWord get() = wordDefinition.source.isNaspa == false

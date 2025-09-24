@@ -47,3 +47,8 @@ internal inline fun assert(condition: () -> Boolean) {
         assert(condition())
     }
 }
+
+/**
+ * The same as [assert], but with a name that ties it more obviously to C#'s [Debug.Assert(Boolean)](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.debug.assert?view=net-9.0).
+ */
+internal inline fun debugAssert(condition: () -> Boolean) = assert(condition)

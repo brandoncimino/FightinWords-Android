@@ -4,6 +4,7 @@ package brava.fightinwords.botlin
  * TODO: Control this _compile-time-constant_ from _outside of the source code_.
  *  It sounds like that should be done using some Gradle shenanigans to generate a file.
  */
+@PublishedApi
 internal const val DEBUG_ASSERTIONS_ENABLED = false
 
 /**
@@ -42,6 +43,7 @@ internal const val DEBUG_ASSERTIONS_ENABLED = false
  *    }
  * ```
  */
+@PublishedApi
 internal inline fun assert(condition: () -> Boolean) {
     if (DEBUG_ASSERTIONS_ENABLED) {
         assert(condition())
@@ -51,4 +53,5 @@ internal inline fun assert(condition: () -> Boolean) {
 /**
  * The same as [assert], but with a name that ties it more obviously to C#'s [Debug.Assert(Boolean)](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.debug.assert?view=net-9.0).
  */
+@PublishedApi
 internal inline fun debugAssert(condition: () -> Boolean) = assert(condition)

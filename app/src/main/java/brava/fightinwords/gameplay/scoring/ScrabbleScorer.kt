@@ -6,9 +6,7 @@ import brava.fightinwords.gameplay.data.Letter.Companion.describe
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.indices
 
-sealed class ScrabbleScorer : WordScorer {
-    companion object Default : ScrabbleScorer()
-
+object ScrabbleScorer : WordScorer {
     private fun getLetterScore(letter: Letter, language: KnownLanguage): Int {
         return when (language) {
             KnownLanguage.English -> getEnglishLetterScore(letter)

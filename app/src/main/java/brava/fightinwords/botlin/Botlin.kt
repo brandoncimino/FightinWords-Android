@@ -110,3 +110,14 @@ fun File.getMemoryMappedBuffer(): MappedByteBuffer {
     val channel = randomAccessFile.channel
     return channel.map(FileChannel.MapMode.READ_ONLY, 0, channel.size())
 }
+
+fun <T> sequenceOfNotNull(element: T?): Sequence<T> {
+    return when (element) {
+        null -> sequenceOf()
+        else -> sequenceOf(element)
+    }
+}
+
+fun <T> sequenceOfNotNull(vararg elements: T?): Sequence<T> {
+    return sequenceOf(*elements).filterNotNull()
+}

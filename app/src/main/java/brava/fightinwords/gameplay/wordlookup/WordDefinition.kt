@@ -10,7 +10,7 @@ data class WordDefinition(
     val language: KnownLanguage,
     val partOfSpeech: String?,
     val definition: String,
-    val source: WordSource,
+    val source: DefinitionLookup.Id,
 )
 
 sealed interface WordDefinitionSubstitution {

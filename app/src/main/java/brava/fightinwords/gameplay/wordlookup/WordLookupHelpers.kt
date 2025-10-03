@@ -69,11 +69,7 @@ internal object WordLookupHelpers {
             language = language,
             partOfSpeech = partOfSpeech,
             definition = definition,
-            isNaspaWord = when (isNaspaWord) {
-                "0" -> false
-                "1" -> true
-                else -> throw IllegalArgumentException("Unknown value for `isNaspaWord`: `$isNaspaWord`. Must be 0 (false) or 1 (true).")
-            }
+            source = WordSource.DefinitionsCsv
         )
     }
 }

@@ -1,16 +1,14 @@
 package brava.fightinwords.gameplay.wordlookup
 
-/**
- * The place where we got a given [WordDefinition] from.
- */
-enum class WordSource {
-    DefinitionsCsv,
-    NaspaWordList2023,
-    ;
+import kotlinx.serialization.Serializable
 
-    val isNaspa
-        inline get() = when (this) {
-            NaspaWordList2023 -> true
-            else              -> false
-        }
+object WordSource {
+    @Serializable
+    object NaspaWordList2023 : WordList.Id, DefinitionLookup.Id
+
+    @Serializable
+    object DefinitionsCsv : WordList.Id, DefinitionLookup.Id
+
+    @Serializable
+    object WiktionaryHttpApi : WordLookup.Id, DefinitionLookup.Id
 }

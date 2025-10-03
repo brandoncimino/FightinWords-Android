@@ -12,11 +12,12 @@ import kotlinx.serialization.Serializable
 /**
  * Decides what is and isn't legal.
  */
+@Deprecated("The time of the Arbiter is now.")
 class Umpire private constructor(
     private val wordStates: MutableMap<Word, WordStateFlavor>,
     private val wordScorer: WordScorer = ScrabbleScorer,
     private val language: KnownLanguage = KnownLanguage.English,
-) {
+) : SubmissionJudge {
     constructor(
         wordPool: Sequence<Word>,
         wordScorer: WordScorer,
@@ -43,7 +44,7 @@ class Umpire private constructor(
 
         override fun fromSerializableState(
             state: SerializableState,
-            gamePlan: GamePlan,
+            sharedResources: EmployeeFactory.SharedResources,
         ): Umpire {
             return Umpire(
                 state.flavorMap.reverseTo(mutableMapOf())
@@ -51,16 +52,16 @@ class Umpire private constructor(
         }
 
         override fun SaveGameState.getEmployeeState(): SerializableState =
-            ledgermanState.umpireState
+            TODO()//ledgermanState.umpireState
     }
 
     init {
-        blog { "Created ${this.javaClass.simpleName} with a pool of ${wordStates.size} playable words (${wordStates.count { it is DefinedWordState && it.wordDefinition.source.isNaspa }} NASPA standard)" }
+        blog { "Created ${this.javaClass.simpleName} with a pool of ${wordStates.size} playable words" }
     }
 
     private fun getScore(word: Word): Int = wordScorer.getScore(word, language)
 
-    fun submitWord(word: Word): SubmissionResult {
+    override fun submitWord(word: Word): SubmissionResult {
         blog(Log.DEBUG) { "Submitting word $word" }
         val previousState = wordStates[word]
 
@@ -68,6 +69,7 @@ class Umpire private constructor(
             WordStateFlavor.Accepted -> SubmissionResult.Accepted(
                 word,
                 Freshness.Stale,
+                WordCategory.Core/*TODO*/,
                 getScore(word)
             )
 
@@ -86,7 +88,12 @@ class Umpire private constructor(
         }
 
         wordStates[unplayedWord] = WordStateFlavor.Accepted
-        return SubmissionResult.Accepted(unplayedWord, Freshness.Fresh, getScore(unplayedWord))
+        return SubmissionResult.Accepted(
+            unplayedWord,
+            Freshness.Fresh,
+            WordCategory.Core,
+            getScore(unplayedWord)
+        )
     }
 
     private fun rejectFreshWord(word: Word): brava.fightinwords.gameplay.SubmissionResult {
@@ -117,17 +124,6 @@ class Umpire private constructor(
         //       ~ A "hybrid" version, that asynchronously **starts** option 🅱️, then waits for specifically requested definitions, could speed this up
         val flavorMap: Map<WordStateFlavor, List<Word>>,
     )
-}
-
-enum class UnsubmittedWordVisibility {
-    None,
-    Standard,
-    All;
-}
-
-enum class Freshness {
-    Fresh,
-    Stale
 }
 
 private fun <K, V, M : MutableMap<V, K>> Map<K, Iterable<V>>.reverseTo(destination: M): M {

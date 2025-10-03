@@ -1,6 +1,5 @@
 package brava.fightinwords.botlin
 
-import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntryTest.Companion.utf8Bytes
 import org.assertj.core.api.Assertions
 import org.junit.Test
 

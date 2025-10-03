@@ -3,14 +3,13 @@ package brava.fightinwords.gameplay.scoring
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.botlin.TinyFlags
 import brava.fightinwords.botlin.blog
-import brava.fightinwords.gameplay.GamePlan
-import brava.fightinwords.gameplay.WordState
+import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import brava.fightinwords.gameplay.scoring.Ledgerman.Companion.getLengthFilterState
 import kotlinx.serialization.Serializable
 
 sealed interface WordFilterManager {
-    fun filter(word: WordState): Boolean
+    fun filter(word: Word): Boolean
     fun getFilterState(wordFilter: WordFilter): FilterState
     fun enableFilter(wordFilter: WordFilter)
     fun disableFilter(wordFilter: WordFilter)
@@ -29,7 +28,7 @@ sealed interface WordFilterManager {
 
         override fun fromSerializableState(
             state: SerializableState,
-            gamePlan: GamePlan,
+            sharedResources: EmployeeFactory.SharedResources,
         ): WordFilterManager {
             return when (state) {
                 is MultiSelectWordFilters.MultiSelectSerializableState   -> MultiSelectWordFilters(state.lengthFilters)
@@ -53,7 +52,7 @@ class SingleSelectWordFilters(private var selected: WordFilter? = null) : WordFi
         }
     }
 
-    override fun filter(word: WordState) = selected?.filter(word) ?: true
+    override fun filter(word: Word) = selected?.filter(word) ?: true
 
     override fun enableFilter(wordFilter: WordFilter) {
         selected = wordFilter
@@ -86,7 +85,7 @@ class SingleSelectWordFilters(private var selected: WordFilter? = null) : WordFi
 
         override fun fromSerializableState(
             state: SingleSelectSerializableState,
-            gamePlan: GamePlan,
+            sharedResources: EmployeeFactory.SharedResources,
         ): SingleSelectWordFilters {
             return SingleSelectWordFilters(state.selected)
         }
@@ -107,8 +106,8 @@ class MultiSelectWordFilters(
         }
     }
 
-    override fun filter(word: WordState): Boolean {
-        return lengthFilters.getLengthFilterState(word.word.length).isActive
+    override fun filter(word: Word): Boolean {
+        return lengthFilters.getLengthFilterState(word.length).isActive
     }
 
     override fun enableFilter(wordFilter: WordFilter) {

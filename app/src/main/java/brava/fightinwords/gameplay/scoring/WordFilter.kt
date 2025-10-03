@@ -1,17 +1,17 @@
 package brava.fightinwords.gameplay.scoring
 
-import brava.fightinwords.gameplay.WordState
+import brava.fightinwords.gameplay.data.Word
 import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface WordFilter {
-    fun filter(wordState: WordState): Boolean
+    fun filter(word: Word): Boolean
 
     @Serializable
     @JvmInline
     value class LengthFilter(val wordLength: Int) : WordFilter {
-        override fun filter(wordState: WordState): Boolean {
-            return wordState.word.length == wordLength
+        override fun filter(word: Word): Boolean {
+            return word.length == wordLength
         }
 
         override val label get() = wordLength.toString()

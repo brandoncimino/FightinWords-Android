@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.Word.Companion.indices
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.swaggins
@@ -28,16 +29,17 @@ fun GalleyView(
     onClick: (index: Int) -> Unit
 ) {
     Row(
-        modifier = Modifier.border(
-            1.dp, MaterialTheme.colorScheme.surface
-        )
+        modifier = Modifier
+            .border(
+                1.dp, MaterialTheme.colorScheme.surface
+            )
             .height(letterTilePersonalSpace)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
     ) {
-        composingStick.forEachIndexed { i, it ->
+        for (i in composingStick.indices) {
             LetterTile(
-                letter = it.toString(),
+                letter = composingStick[i].toString(),
                 letterCase = uiSettings.letterButtonCase,
                 personalSpace = letterTilePersonalSpace,
                 flavor = LetterTileFlavor.Galley,

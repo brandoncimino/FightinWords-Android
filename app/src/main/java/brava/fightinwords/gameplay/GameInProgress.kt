@@ -2,14 +2,15 @@ package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Typesetter.Companion.getSerializableState
-import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.LetterPool
+import brava.fightinwords.gameplay.data.WordPool
+import brava.fightinwords.gameplay.hr.EmployeeFactory
 import brava.fightinwords.gameplay.hr.EmployeeFactory.Companion.load
 import brava.fightinwords.gameplay.scoring.Ledgerman
 import brava.fightinwords.gameplay.scoring.Ledgerman.Companion.getSerializableState
-import brava.fightinwords.gameplay.scoring.ScrabbleScorer
-import brava.fightinwords.gameplay.scoring.WordScorer
-import brava.fightinwords.gameplay.wordlookup.DefinitionLookup
 import brava.fightinwords.gameplay.wordlookup.DefinitionLookup.Companion.requireDefinition
+import brava.fightinwords.gameplay.wordlookup.Factotum.Companion.getFactotum
+import brava.fightinwords.gameplay.wordlookup.WordSourceLoader
 
 /**
  * Manages the staff _([Typesetter], [Umpire], etc.)_.
@@ -17,10 +18,9 @@ import brava.fightinwords.gameplay.wordlookup.DefinitionLookup.Companion.require
  * In most cases, staff members shouldn't talk to each other directly - instead, they should go through the [GameInProgress].
  */
 class GameInProgress(
-    val gamePlan: GamePlan,
+    val sharedResources: EmployeeFactory.SharedResources,
     val typesetter: Typesetter,
     val ledgerman: Ledgerman,
-    val definitionLookup: DefinitionLookup,
     val onStatePossiblyChanged: () -> Unit = {},
 ) {
     inline val umpire inline get() = ledgerman.umpire
@@ -30,41 +30,52 @@ class GameInProgress(
             inline get() = minimumWordLength..letterPool.length
 
         fun startGame(
+            wordSourceLoader: WordSourceLoader,
             gamePlan: GamePlan,
-            wordPool: Sequence<Word>,
-            wordScorer: WordScorer = ScrabbleScorer,
-            definitionLookup: DefinitionLookup,
             onStatePossiblyChanged: () -> Unit = {},
         ): GameInProgress {
+            val coreWordList = wordSourceLoader.getWordList(gamePlan.coreWordList)
+            val coreWordPool = WordPool(
+                LetterPool(gamePlan.letterPool),
+                coreWordList,
+                gamePlan.minimumWordLength
+            )
+
+
+            val factotum = wordSourceLoader.getFactotum(gamePlan)
+            val sharedResources = EmployeeFactory.SharedResources(gamePlan, factotum)
+
             return GameInProgress(
-                gamePlan = gamePlan,
+                sharedResources = sharedResources,
                 typesetter = Typesetter(gamePlan.letterPool),
                 ledgerman = Ledgerman(
                     unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
                     wordLengthRange = gamePlan.wordLengthRange,
-                    umpire = Umpire(wordPool, wordScorer)
+                    umpire = Arbiter(factotum)
                 ),
-                definitionLookup = definitionLookup,
                 onStatePossiblyChanged = onStatePossiblyChanged
             )
         }
 
         fun resumeGame(
+            wordSourceLoader: WordSourceLoader,
             saveGameState: SaveGameState,
-            definitionLookup: DefinitionLookup,
         ): GameInProgress {
-            return GameInProgress(
+            val sharedResources = EmployeeFactory.SharedResources(
                 saveGameState.gamePlan,
-                Typesetter.load(saveGameState),
-                Ledgerman.load(saveGameState),
-                definitionLookup
+                wordSourceLoader.getFactotum(saveGameState.gamePlan)
+            )
+            return GameInProgress(
+                sharedResources,
+                Typesetter.load(saveGameState, sharedResources),
+                Ledgerman.load(saveGameState, sharedResources),
             )
         }
     }
 
     fun getSerializableState(): SaveGameState {
         return SaveGameState(
-            gamePlan = gamePlan,
+            gamePlan = sharedResources.gamePlan,
             typesetterState = typesetter.getSerializableState(),
             ledgermanState = ledgerman.getSerializableState()
         )
@@ -75,8 +86,8 @@ class GameInProgress(
         val submissionResult = umpire.submitWord(submittedWord)
 
         if (submissionResult is SubmissionResult.Accepted) {
-            val definition = definitionLookup.requireDefinition(submissionResult.word)
-            val wordState = Accepted(definition, submissionResult.points)
+            val definition = sharedResources.factotum.requireDefinition(submissionResult.word)
+            val wordState = Accepted(definition, submissionResult.category, submissionResult.points)
             ledgerman.focusOnWord(wordState)
         }
 

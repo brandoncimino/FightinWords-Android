@@ -1,6 +1,6 @@
 package brava.fightinwords.botlin
 
-import brava.fightinwords.botlin.TinyRange.Companion.length
+import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions
@@ -25,8 +25,10 @@ class TinyRangeTest {
     fun emptyTest() {
         val ranges = listOf(
             TinyRange.empty,
-            TinyRange(1, 0),
-            TinyRange(0, -1)
+            TinyRange.startEndInclusive(1, 0),
+            TinyRange.startEndInclusive(0, -1),
+            TinyRange.startLength(0, 0),
+            TinyRange.startLength(0, -1)
         )
 
         Assertions.assertThat(ranges)

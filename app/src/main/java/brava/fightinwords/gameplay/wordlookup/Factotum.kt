@@ -1,22 +1,29 @@
 package brava.fightinwords.gameplay.wordlookup
 
-import brava.fightinwords.botlin.requireNoDuplicates
+import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.gameplay.GamePlan
 import brava.fightinwords.gameplay.WordCategory
 import brava.fightinwords.gameplay.data.Word
 import kotlin.random.Random
 
 /**
- * Looks up [brava.fightinwords.gameplay.data.Word]s in different sources.
+ * Looks up [Word]s in different sources.
  */
 class Factotum(
-    private val coreWordList: WordList,
+    public val coreWordList: WordList,
     private val bonusWordLookups: List<WordLookup>,
     private val definitionLookups: List<DefinitionLookup>,
 ) : DefinitionLookup {
     init {
         check(definitionLookups.size > 0) { "You must provide at least 1 ${DefinitionLookup::class.simpleName}!" }
-        definitionLookups.requireNoDuplicates()
+
+        ListImplementation.forEachUnorderedPair(
+            0,
+            definitionLookups.lastIndex,
+            { a, b ->
+                check(definitionLookups[a] != definitionLookups[b]) { ("The list contained the element ${definitionLookups[a]} duplicated at the indices $a and $b!") }
+            }
+        )
     }
 
     private fun WordLookup.findWord(word: Word): FoundWord? {

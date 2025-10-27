@@ -26,8 +26,6 @@ sealed interface WordList : WordLookup {
 
     fun getWordByIndex(wordIndex: Int): Word
 
-    fun findRandomWord(desiredLength: Int, random: Random): Result<Word>
-
     fun getCountOfWordsWithLength(wordLength: Int): Int
 
     val wordLengthRange: IntRange
@@ -52,7 +50,7 @@ val WordList.indices inline get() = 0..wordCount
  */
 sealed interface ShortlexWordList : WordList
 
-fun ShortlexWordList.getRandomWord(wordLength: Int, random: Random): Word {
+private fun ShortlexWordList.getRandomWord(wordLength: Int, random: Random): Word {
     val wordLengthRange = getRangeOfWordsWithLength(wordLength)
     val wordOffset = random.nextInt(wordLengthRange)
     return getWordByIndex(wordLengthRange.start + wordOffset)

@@ -4,6 +4,7 @@ import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.TinyRange.Companion.isEmpty
 import brava.fightinwords.botlin.fastSlice
 import brava.fightinwords.botlin.getMemoryMappedBuffer
+import brava.fightinwords.botlin.sequenceOfNotNull
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
 import com.google.common.base.Stopwatch
@@ -33,17 +34,17 @@ class NaspaWordList(
     val index: ShortlexWordListIndex,
     private val bytes: ByteSlice,
 ) : DefinitionLookup, ShortlexWordList {
+    override val id: WordList.Id get() = WordSource.NaspaWordList2023
+
     override fun getCountOfWordsWithLength(wordLength: Int): Int =
         index.wordLengthCounts[wordLength]
 
-    override val wordCount: Int = run {
-        var sum = 0
-        index.wordLengthCounts.forEachValue { sum += it }
-        sum
-    }
+    override val wordLengthRange: IntRange get() = index.wordLengthRange
+
+    override val wordCount: Int = index.wordCount
 
     override fun getWordByIndex(wordIndex: Int): Word {
-        TODO("Not yet implemented")
+        return index.getWordByIndex(wordIndex)
     }
 
     fun findEntry(word: Word): NaspaWordListEntry? {
@@ -54,7 +55,7 @@ class NaspaWordList(
     }
 
     fun findRawEntry(word: TinyWord): ByteSlice? {
-        val range = index.entries.findRange(word)
+        val range = index.findWordRange(word)
         return when {
             range.isEmpty -> null
             else          -> bytes.slice(range)
@@ -71,6 +72,10 @@ class NaspaWordList(
         return findEntry(word)?.toWordDefinition()
     }
 
+    override fun findAllDefinitions(word: Word): Sequence<WordDefinition> {
+        return sequenceOfNotNull(findDefinition(word))
+    }
+
     override fun isWord(word: Word): Boolean {
         return when (word) {
             is TinyWord -> isWord(word)
@@ -79,7 +84,7 @@ class NaspaWordList(
     }
 
     fun isWord(word: TinyWord): Boolean {
-        return index.entries.containsWord(word)
+        return index.findWordIndex(word) >= 0
     }
 }
 

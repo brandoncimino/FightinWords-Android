@@ -251,4 +251,50 @@ internal object ListImplementation {
             action(start, endInclusive)
         }
     }
+
+    /**
+     * ```kotlin
+     * [a, b, c] =>
+     * ab
+     * ac
+     * bc
+     * ```
+     */
+    inline fun forEachUnorderedPair(
+        start: Int,
+        endInclusive: Int,
+        action: (Int, Int) -> Unit,
+    ) {
+        for (a in start..endInclusive) {
+            for (b in (a + 1)..endInclusive) {
+                action(a, b)
+            }
+        }
+    }
+
+    inline fun forEachConsecutivePair(
+        start: Int,
+        endInclusive: Int,
+        action: (Int, Int) -> Unit,
+    ) {
+        for (first in start until endInclusive) {
+            action(first, start)
+        }
+    }
+
+    inline fun forEachDuplicate(
+        start: Int,
+        endInclusive: Int,
+        equality: (Int, Int) -> Boolean,
+        action: (originalIndex: Int, duplicateIndex: Int) -> Unit,
+    ) {
+        for (next in start..endInclusive) {
+            for (earlier in start until next) {
+                if (equality(earlier, next)) {
+                    action(earlier, next)
+                }
+            }
+        }
+    }
+
 }

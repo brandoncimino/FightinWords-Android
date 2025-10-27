@@ -9,36 +9,38 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.GameInProgress
 import brava.fightinwords.gameplay.GamePlan
-import brava.fightinwords.gameplay.data.LetterPool
-import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.scoring.ScrabbleScorer
 import brava.fightinwords.gameplay.scoring.WordScorer
+import brava.fightinwords.gameplay.scoring.WordScoringStrategy
 import brava.fightinwords.gameplay.wordlookup.DefinitionLookup
 import brava.fightinwords.gameplay.wordlookup.DefinitionsCsvLookup
 import brava.fightinwords.gameplay.wordlookup.NaspaWordList
+import brava.fightinwords.gameplay.wordlookup.WordList
 import brava.fightinwords.gameplay.wordlookup.WordLookup
+import brava.fightinwords.gameplay.wordlookup.WordSource
+import brava.fightinwords.gameplay.wordlookup.WordSourceLoader
+import brava.fightinwords.gameplay.wordlookup.getRandomWord
 import brava.fightinwords.ui.GameScreen
 import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.theme.FightinWordsTheme
-import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialFormat
 import kotlinx.serialization.cbor.Cbor
-import kotlin.random.Random
 
-class MainActivity : ComponentActivity() {
+const val DefaultLetterPoolSize = 6
+val DefaultCoreWordList: WordList.Id = WordSource.NaspaWordList2023
+
+class MainActivity : ComponentActivity(), WordSourceLoader {
     private val gameViewModel: GameViewModel by viewModels()
+
+    @Deprecated("remove this")
     private val snackbarHostState = SnackbarHostState()
 
     /**
@@ -54,11 +56,11 @@ class MainActivity : ComponentActivity() {
      *     val naspaWordList by lazy { WordFileLookup(assets.open("en/NWL2023_words.txt")) }
      * ```
      */
-    val naspaWordList by lazy {
+    private val naspaWordList by lazy {
         return@lazy NaspaWordList(getCachedAssetBytes("en/NWL2023.txt"))
     }
 
-    val definitionsCsvLookup by lazy {
+    private val definitionsCsvLookup by lazy {
         return@lazy DefinitionsCsvLookup(getCachedAssetBytes("en/definitions.csv"))
     }
 
@@ -69,21 +71,21 @@ class MainActivity : ComponentActivity() {
 
         gameViewModel.setGameInProgress(
             when (saveGameState) {
-                null -> startFreshGame(
-                    GamePlan(naspaWordList.randomWordLetterPool()),
-                    definitionsCsvLookup,
-                    definitionsCsvLookup
-                )
-                else -> GameInProgress.resumeGame(saveGameState)
+                null -> {
+                    val letterPool = getWordList(DefaultCoreWordList)
+                        .getRandomWord(DefaultLetterPoolSize)
+                    val gamePlan = GamePlan(letterPool)
+                    startFreshGame(
+                        gamePlan = gamePlan
+                    )
+                }
+
+                else -> GameInProgress.resumeGame(this, saveGameState)
             }
         )
 
-
-
         enableEdgeToEdge()
         setContent {
-            SubmissionSnackbar()
-
             FightinWordsTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -94,26 +96,6 @@ class MainActivity : ComponentActivity() {
                         gameViewModel.gameScreenInteractions,
                         uiSettings = UiSettings(),
                         modifier = Modifier.padding(it)
-                    )
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun SubmissionSnackbar(enabled: Boolean = false) {
-        if (!enabled) {
-            return
-        }
-
-        val scope = rememberCoroutineScope()
-        LaunchedEffect(Unit) {
-            gameViewModel.submissionResults.collect { submissionResult ->
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "${submissionResult.wordState.javaClass.simpleName}",
-                        withDismissAction = true,
-                        duration = SnackbarDuration.Short
                     )
                 }
             }
@@ -143,32 +125,41 @@ ${it.stackTraceToString()}
             }
     }
 
-    private fun WordLookup.randomWordLetterPool(wordLength: Int = 6): Word {
-        return findRandomWord(wordLength, Random)
-            .getOrThrow()
-    }
-
     fun startFreshGame(
         gamePlan: GamePlan,
-        wordLookup: WordLookup,
-        definitionLookup: DefinitionLookup,
-        wordScorer: WordScorer = ScrabbleScorer,
     ): GameInProgress {
-        val letterPool = LetterPool(gamePlan.letterPool)
-
-        val allAllPossibleWords = (gamePlan.minimumWordLength..gamePlan.letterPool.length)
-            .asSequence()
-            .flatMap {
-                wordLookup.findAllPossibleWords(letterPool, it)
-            }
-
-        val gameInProgress = GameInProgress.startGame(
-            gamePlan = gamePlan,
-            wordPool = allAllPossibleWords,
-            wordScorer = wordScorer,
-            definitionLookup = definitionLookup
-        )
-
-        return gameInProgress
+        return GameInProgress.startGame(this, gamePlan)
     }
+
+    override fun getWordLookup(id: WordLookup.Id): WordLookup {
+        return when (id) {
+            WordSource.DefinitionsCsv    -> definitionsCsvLookup
+            WordSource.NaspaWordList2023 -> naspaWordList
+            WordSource.WiktionaryHttpApi -> TODO()
+        }
+    }
+
+    override fun getDefinitionLookup(id: DefinitionLookup.Id): DefinitionLookup {
+        return when (id) {
+            WordSource.DefinitionsCsv    -> definitionsCsvLookup
+            WordSource.NaspaWordList2023 -> naspaWordList
+            WordSource.WiktionaryHttpApi -> TODO()
+        }
+    }
+
+    override fun getWordList(id: WordList.Id): WordList {
+        return when (id) {
+            is WordSource.NaspaWordList2023 -> naspaWordList
+            WordSource.DefinitionsCsv       -> definitionsCsvLookup
+        }
+    }
+
+    override fun getWordScorer(strategy: WordScoringStrategy): WordScorer {
+        return when (strategy) {
+            WordScoringStrategy.Scrabble -> ScrabbleScorer as WordScorer
+        }
+    }
+
+    override val allDefinitionLookups: List<DefinitionLookup> =
+        listOf(naspaWordList, definitionsCsvLookup)
 }

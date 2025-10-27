@@ -149,34 +149,48 @@ sealed interface Word : Comparable<Word> {
         /**
          * Compares two words [lexicographically](https://en.wikipedia.org/wiki/Lexicographic_order).
          */
-        inline fun <reified T : Word> T.lexicographicalCompare(other: T): Int {
+        fun Word.lexicographicalCompareTo(other: Word): Int {
+            return lexicographicalCompare(this, other)
+        }
+
+        /**
+         * Compares two words [lexicographically](https://en.wikipedia.org/wiki/Lexicographic_order).
+         */
+        fun lexicographicalCompare(a: Word, b: Word): Int {
             return ListImplementation.lexicographicalCompare(
-                length,
-                other.length
+                a.length,
+                b.length
             ) { letterIndex ->
-                this[letterIndex].compareTo(other[letterIndex])
+                a[letterIndex].compareTo(b[letterIndex])
             }
         }
 
         /**
          * Compares two words in [shortlex order](https://en.wikipedia.org/wiki/Shortlex_order).
          */
-        fun Word.shortlexCompare(other: Word): Int {
-            if (this === other) {
+        fun Word.shortlexCompareTo(other: Word): Int {
+            return shortlexCompare(this, other)
+        }
+
+        /**
+         * Compares two words in [shortlex order](https://en.wikipedia.org/wiki/Shortlex_order).
+         */
+        fun shortlexCompare(a: Word, b: Word): Int {
+            if (a === b) {
                 return 0
             }
 
             return ListImplementation.shortlexCompare(
-                length,
-                other.length
+                a.length,
+                b.length
             ) { letterIndex ->
-                this[letterIndex].compareTo(other[letterIndex])
+                a[letterIndex].compareTo(b[letterIndex])
             }
         }
     }
 
     override fun compareTo(other: Word): Int {
-        return lexicographicalCompare(other)
+        return this@Word.lexicographicalCompareTo(other)
     }
 }
 

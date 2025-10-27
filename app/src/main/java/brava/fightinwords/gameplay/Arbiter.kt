@@ -13,8 +13,8 @@ class Arbiter(
     private val submissions: MutableMap<Word, SubmissionResult> = mutableMapOf(),
     private val wordScorer: WordScorer = ScrabbleScorer,
     private val language: KnownLanguage = KnownLanguage.English,
-) : SubmissionJudge {
-    override fun submitWord(word: Word): SubmissionResult {
+) {
+    fun submitWord(word: Word): SubmissionResult {
         return submissions.compute(word) { word, previousSubmission ->
             when (previousSubmission) {
                 is SubmissionResult.Accepted -> previousSubmission.copy(freshness = Freshness.Stale)
@@ -40,6 +40,12 @@ class Arbiter(
             )
         }
     }
+
+    fun getCurrentStateOf(word: Word) = submissions[word]
+
+    fun acceptedWords() = submissions.asSequence()
+        .filter { it.value is SubmissionResult.Accepted }
+        .map { it.key }
 
     @Serializable
     data class SerializableState(val submissions: List<SubmissionResult>)

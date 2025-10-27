@@ -2,14 +2,15 @@ package brava.fightinwords.gameplay.scoring
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.botlin.TinyFlags
-import brava.fightinwords.gameplay.Accepted
+import brava.fightinwords.gameplay.Arbiter
+import brava.fightinwords.gameplay.Arbiter.Companion.getSerializableState
 import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.FocusLens
-import brava.fightinwords.gameplay.GamePlan
-import brava.fightinwords.gameplay.Umpire
-import brava.fightinwords.gameplay.Umpire.Companion.getSerializableState
+import brava.fightinwords.gameplay.SubmissionResult
 import brava.fightinwords.gameplay.UnsubmittedWordVisibility
-import brava.fightinwords.gameplay.WordState
+import brava.fightinwords.gameplay.WordCategory
+import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.WordPool
 import brava.fightinwords.gameplay.hr.EmployeeFactory
 import kotlinx.serialization.Serializable
 
@@ -19,7 +20,8 @@ class Ledgerman(
     val wordSorting: WordSorting = WordSorting.LengthFirst,
     focusedWord: FocusLens.State<DefinedWordState>? = null,
     val wordFilterManger: WordFilterManager = SingleSelectWordFilters(),
-    val umpire: Umpire,
+    val coreWordPool: WordPool,
+    val arbiter: Arbiter,
 ) {
     internal val focusedWordLens = FocusLens(focusedWord)
     val focusedWord by focusedWordLens
@@ -42,18 +44,18 @@ class Ledgerman(
         }
     }
 
-    fun isVisible(wordState: WordState): Boolean {
-        if (wordFilterManger.filter(wordState) == false) {
+    fun isVisible(submissionResult: SubmissionResult): Boolean {
+        val word = submissionResult.word
+        if (wordFilterManger.filter(word) == false) {
             return false
         }
 
-        return when (wordState) {
-            is Accepted -> true
+        return when (submissionResult) {
+            is SubmissionResult.Accepted -> true
             else        ->
                 when (unsubmittedWordVisibility) {
                     UnsubmittedWordVisibility.None     -> false
-                    UnsubmittedWordVisibility.Standard -> wordState is DefinedWordState && wordState.wordDefinition.isNaspaWord
-                    UnsubmittedWordVisibility.All      -> true
+                    UnsubmittedWordVisibility.Standard -> word is DefinedWordState && word.category == WordCategory.Core
                 }
         }
     }
@@ -62,27 +64,31 @@ class Ledgerman(
     data class State(
         val wordFilters: WordFilterManager.SerializableState,
         val focusedWord: FocusLens.State<DefinedWordState>?,
-        val umpireState: Umpire.SerializableState,
+        val umpireState: Arbiter.SerializableState,
     )
 
     companion object : EmployeeFactory<Ledgerman, State> {
         override fun Ledgerman.getSerializableState() = State(
             wordFilterManger.snapshot(),
             focusedWord,
-            umpire.getSerializableState()
+            arbiter.getSerializableState()
         )
 
         override fun fromSerializableState(
             state: State,
-            gamePlan: GamePlan,
+            sharedResources: EmployeeFactory.SharedResources,
         ): Ledgerman {
             return Ledgerman(
-                unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
+                unsubmittedWordVisibility = sharedResources.gamePlan.unsubmittedWordVisibility,
                 focusedWord = state.focusedWord,
-                wordFilterManger = WordFilterManager.fromSerializableState(state.wordFilters, gamePlan),
-                wordSorting = gamePlan.scoreboardSorting,
-                umpire = Umpire.fromSerializableState(state.umpireState, gamePlan),
-                wordLengthRange = gamePlan.minimumWordLength..gamePlan.letterPool.length
+                wordFilterManger = WordFilterManager.fromSerializableState(
+                    state.wordFilters,
+                    sharedResources
+                ),
+                wordSorting = sharedResources.gamePlan.scoreboardSorting,
+                arbiter = Arbiter.fromSerializableState(state.umpireState, sharedResources),
+                wordLengthRange = sharedResources.gamePlan.minimumWordLength..sharedResources.gamePlan.letterPool.length,
+                coreWordPool = sharedResources.coreWordPool
             )
         }
 
@@ -97,22 +103,58 @@ class Ledgerman(
         }
     }
 
-    fun getVisibleWords(): List<WordState> {
-        return umpire.getSerializableState()
-            .wordStates
-            .filter { isVisible(it) }
-            .sortedWith(wordSorting)
+    private val Word.isCore get() = coreWordPool.contains(this)
+
+    private fun getScoreboardWordVisibility(word: Word): ScoreboardWord? {
+        val state = arbiter.getCurrentStateOf(word)
+
+        return when (state) {
+            is SubmissionResult.Accepted -> ScoreboardWordVisibility.Full
+            is SubmissionResult.Rejected -> null
+            null                         -> when (unsubmittedWordVisibility) {
+                UnsubmittedWordVisibility.None -> null
+                UnsubmittedWordVisibility.Standard -> when {
+                    word.isCore -> ScoreboardWordVisibility.Masked
+                    else        -> null
+                }
+            }
+        }?.let {
+            ScoreboardWord(word, it)
+        }
+    }
+
+    /**
+     * TODO: This is a very important method to optimize - however, it needs to be optimized SPECIFICALLY with the intent to reduce recompositions.
+     */
+    fun getScoreboardWords(): List<ScoreboardWord> {
+        return sequence {
+            yieldAll(arbiter.acceptedWords())
+            yieldAll(coreWordPool.words)
+        }
+            .distinct()
+            .mapNotNull { getScoreboardWordVisibility(it) }
+            .toList()
     }
 
     fun expandFocusedWord() = focusedWordLens.expand()
     fun collapseFocusedWord() = focusedWordLens.collapse()
     fun focusOnWord(wordState: DefinedWordState) = focusedWordLens.focusOn(wordState)
 
-    enum class WordSorting(val comparator: Comparator<WordState>) : Comparator<WordState> by comparator {
+    enum class WordSorting(val comparator: Comparator<Word>) : Comparator<Word> by comparator {
         /**
          * AKA "[shortlex order](https://en.wikipedia.org/wiki/Shortlex_order)".
          */
-        LengthFirst(Comparator.comparing<WordState, Int> { it.word.length }.thenBy { it.word }),
-        Lexicographical(Comparator.comparing { it.word }),
+        LengthFirst(Word::shortlexCompare),
+        Lexicographical(Word::lexicographicalCompare),
     }
+}
+
+data class ScoreboardWord(
+    val word: Word,
+    val visibility: ScoreboardWordVisibility,
+)
+
+enum class ScoreboardWordVisibility {
+    Masked,
+    Full
 }

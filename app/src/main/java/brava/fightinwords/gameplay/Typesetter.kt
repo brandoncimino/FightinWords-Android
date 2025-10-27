@@ -136,7 +136,7 @@ class Typesetter(
 
         override fun fromSerializableState(
             state: SerializableState,
-            gamePlan: GamePlan
+            sharedResources: EmployeeFactory.SharedResources,
         ): Typesetter {
             return Typesetter(state.slugStates)
         }

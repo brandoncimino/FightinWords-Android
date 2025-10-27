@@ -13,7 +13,7 @@ import brava.fightinwords.gameplay.wordlookup.Factotum.Companion.getFactotum
 import brava.fightinwords.gameplay.wordlookup.WordSourceLoader
 
 /**
- * Manages the staff _([Typesetter], [Umpire], etc.)_.
+ * Manages the staff _([Typesetter], [Arbiter], etc.)_.
  *
  * In most cases, staff members shouldn't talk to each other directly - instead, they should go through the [GameInProgress].
  */
@@ -23,7 +23,7 @@ class GameInProgress(
     val ledgerman: Ledgerman,
     val onStatePossiblyChanged: () -> Unit = {},
 ) {
-    inline val umpire inline get() = ledgerman.umpire
+    inline val arbiter inline get() = ledgerman.arbiter
 
     companion object {
         inline val GamePlan.wordLengthRange
@@ -43,7 +43,7 @@ class GameInProgress(
 
 
             val factotum = wordSourceLoader.getFactotum(gamePlan)
-            val sharedResources = EmployeeFactory.SharedResources(gamePlan, factotum)
+            val sharedResources = EmployeeFactory.SharedResources(wordSourceLoader, gamePlan)
 
             return GameInProgress(
                 sharedResources = sharedResources,
@@ -51,7 +51,8 @@ class GameInProgress(
                 ledgerman = Ledgerman(
                     unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
                     wordLengthRange = gamePlan.wordLengthRange,
-                    umpire = Arbiter(factotum)
+                    arbiter = Arbiter(factotum),
+                    coreWordPool = coreWordPool
                 ),
                 onStatePossiblyChanged = onStatePossiblyChanged
             )
@@ -62,8 +63,8 @@ class GameInProgress(
             saveGameState: SaveGameState,
         ): GameInProgress {
             val sharedResources = EmployeeFactory.SharedResources(
-                saveGameState.gamePlan,
-                wordSourceLoader.getFactotum(saveGameState.gamePlan)
+                wordSourceLoader,
+                saveGameState.gamePlan
             )
             return GameInProgress(
                 sharedResources,
@@ -83,7 +84,7 @@ class GameInProgress(
 
     fun submitGalley(): SubmissionResult {
         val submittedWord = typesetter.submitAndClear()
-        val submissionResult = umpire.submitWord(submittedWord)
+        val submissionResult = arbiter.submitWord(submittedWord)
 
         if (submissionResult is SubmissionResult.Accepted) {
             val definition = sharedResources.factotum.requireDefinition(submissionResult.word)

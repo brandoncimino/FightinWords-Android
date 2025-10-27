@@ -18,15 +18,21 @@ sealed interface WordState {
 sealed interface DefinedWordState : WordState {
     val wordDefinition: WordDefinition
     override val word get() = wordDefinition.word
+    val category: WordCategory
 }
 
 @Serializable
-data class Unplayed(override val wordDefinition: WordDefinition) : DefinedWordState
+data class Unplayed(
+    override val wordDefinition: WordDefinition,
+    override val category: WordCategory,
+) : DefinedWordState
 
 @Serializable
 data class Rejected(override val word: Word) : WordState
 
 @Serializable
-data class Accepted(override val wordDefinition: WordDefinition, val points: Int) : DefinedWordState
-
-val DefinedWordState.isBonusWord get() = wordDefinition.source.isNaspa == false
+data class Accepted(
+    override val wordDefinition: WordDefinition,
+    override val category: WordCategory,
+    val points: Int,
+) : DefinedWordState

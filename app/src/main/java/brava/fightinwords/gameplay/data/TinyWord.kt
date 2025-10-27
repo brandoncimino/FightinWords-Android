@@ -2,6 +2,7 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.lastIndex
+import brava.fightinwords.gameplay.data.TinyWord.Companion.packAZ
 import brava.fightinwords.gameplay.data.Word.Companion.indices
 import org.jetbrains.annotations.ApiStatus
 import java.io.BufferedInputStream
@@ -97,6 +98,15 @@ value class TinyWord(val packed: Long) : Word {
             return TinyWord(packAZ(charSequence));
         }
 
+        fun CharSequence.asTinyWord(): TinyWord? {
+            val packed = tryPackAz(this)
+            if (packed < 0) {
+                return TinyWord.empty
+            }
+
+            return TinyWord(packed)
+        }
+
         fun CharSequence.toTinyWord() = of(this)
 
         enum class LongWordHandling {
@@ -178,6 +188,25 @@ value class TinyWord(val packed: Long) : Word {
                 hash = hash.packLetter(c)
             }
             return hash.packLength(s.length) // put length in last 4 bits
+        }
+
+        /**
+         * Similar to [packAZ], but returns `-1` if [s] can't be turned into a [brava.fightinwords.gameplay.data.TinyWord] (either because it is too long, or it has non-[TinyLetter]s)
+         */
+        internal fun tryPackAz(s: CharSequence): Long {
+            if (s.length > MAX_PACK) {
+                return -1
+            }
+
+            var hash = 0L
+            for (c in s) {
+                val lowerAz = c.asLowerAz()
+                if (lowerAz < 0) {
+                    return -1
+                }
+                hash = hash.packLowerAz(lowerAz)
+            }
+            return hash.packLength(s.length)
         }
 
         private fun Long.packLong(long: Long) = (this shl 5) or long

@@ -139,19 +139,19 @@ private fun Byte.rejectNotAz(original: Any) : Byte = when(this){
     else -> this
 }
 
-private fun Char.asLowerAz() : Byte = when(this) {
+internal fun Char.asLowerAz(): Byte = when (this) {
     in 'a'..'z' -> code.toByte()
     in 'A'..'Z' -> (code + 32).toByte()
     else -> -1
 }
 
-private fun Byte.asLowerAz() : Byte = when(this) {
+internal fun Byte.asLowerAz(): Byte = when (this) {
     in a..z -> this
     in A..Z -> (this + 32).toByte()
     else -> -1
 }
 
-private fun Int.asLowerAz() : Byte = when(this){
+internal fun Int.asLowerAz(): Byte = when (this) {
     in 'a'.code..'z'.code -> this.toByte()
     in 'A'.code..'Z'.code -> (this + 32).toByte()
     else -> -1

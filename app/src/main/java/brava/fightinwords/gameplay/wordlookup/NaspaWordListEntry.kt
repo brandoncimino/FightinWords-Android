@@ -4,15 +4,12 @@ import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.botlin.Substring.Companion.fastSlice
 import brava.fightinwords.botlin.TinyRange
-import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import brava.fightinwords.botlin.TinyRange.Companion.til
-import brava.fightinwords.botlin.forEachWrappedRange
 import brava.fightinwords.botlin.indexOf
-import brava.fightinwords.botlin.toUtf8String
-import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
-import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.leftSquiggly
-import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.rightSquiggly
+import brava.fightinwords.gameplay.wordlookup.AnnotatedDefinitionPart.Companion.appendInline
+import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.linkEnd
+import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.linkStart
 
 /**
  * A single line of the [NASPA Word List](https://www.scrabbleplayers.org/w/NASPA_Word_List).
@@ -32,8 +29,6 @@ data class NaspaWordListEntry internal constructor(
     val definitionRange: TinyRange,
     val partOfSpeechRange: TinyRange,
 ) {
-    fun definitionSlice() = rawEntry.slice(definitionRange)
-
     companion object {
         const val inlineStart = '<'.code.toByte()
         const val inlineEnd = '>'.code.toByte()
@@ -44,10 +39,6 @@ data class NaspaWordListEntry internal constructor(
         private const val space = ' '.code.toByte()
         private const val leftSquareBracket = '['.code.toByte()
         private const val rightSquareBracket = ']'.code.toByte()
-        private const val lessThan = '<'.code.toByte()
-        private const val greaterThan = '>'.code.toByte()
-        private const val leftSquiggly = '{'.code.toByte()
-        private const val rightSquiggly = '}'.code.toByte()
         private const val equals = '='.code.toByte()
 
         fun parse(
@@ -67,42 +58,68 @@ data class NaspaWordListEntry internal constructor(
             )
         }
 
-        fun parseSubstitutions(definition: ByteSlice): List<WordDefinitionSubstitution> {
-            return buildList {
-                definition.forEachWrappedRange(
-                    leftSquiggly,
-                    rightSquiggly
-                ){
-                    start, endInclusive ->
-                    add(
-                        WordDefinitionSubstitution.Link(
-                        start..endInclusive,
-                        parseNaspaWordKey(definition, start, endInclusive)
-                    ))
-                }
-
-                definition.forEachWrappedRange(
-                    lessThan,
-                    greaterThan
-                ) {
-                    start, endInclusive ->
-                    add(
-                        WordDefinitionSubstitution.Inline(
-                            start..endInclusive,
-                            parseNaspaWordKey(definition, start, endInclusive)
+        fun parseAnnotatedParts(
+            def: ByteSlice,
+            naspaWordList: NaspaWordList,
+        ): List<AnnotatedDefinitionPart> {
+            val parts = buildList {
+                ListImplementation.forEachWrappedRange(
+                    sourceStart = 0,
+                    sourceEndInclusive = def.lastIndex,
+                    isWrapperStart = {
+                        val byte = def[it]
+                        byte == linkStart || byte == inlineStart
+                    },
+                    isWrapperEndInclusive = { rangeStart, rangeEndInclusive ->
+                        val firstByte = def[rangeStart]
+                        val lastByte = def[rangeEndInclusive]
+                        when (firstByte) {
+                            linkStart   -> lastByte == linkEnd
+                            inlineStart -> lastByte == inlineEnd
+                            else        -> throw IllegalStateException("This should have been impossible!")
+                        }
+                    },
+                    unwrappedRangeAction = { rangeStart, rangeEndInclusive ->
+                        add(
+                            AnnotatedDefinitionPart.Literal(
+                                def.slice(
+                                    rangeStart,
+                                    rangeEndInclusive
+                                )
+                            )
                         )
-                    )
-                }
+                    },
+                    wrappedRangeAction = { start, endInclusive ->
+                        val wordKey = parseNaspaWordKey(
+                            def,
+                            start,
+                            endInclusive
+                        )
+                        when (def[start]) {
+                            linkStart   -> {
+                                add(
+                                    AnnotatedDefinitionPart.Link(wordKey)
+                                )
+                            }
+
+                            inlineStart -> {
+                                appendInline(wordKey, naspaWordList)
+                            }
+                        }
+                    },
+                )
             }
+
+            return parts
         }
 
         /**
-         * Extracts a [WordKey] from a "reference" in a [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definition],
+         * Extracts a [WordKey] from a "reference" in a [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definitionRange],
          * e.g. `{bisexual=n}` in `BI a {bisexual=n} [n BIS]`.
          *
-         * @param definition The full [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definition]
-         * @param wrapperStart The index in the [definition] that indicated the beginning of the word key, e.g. [leftSquiggly] in `{bisexual=n}`.
-         * @param wrapperEndInclusive The index in the [definition] of the closing character, e.g. [rightSquiggly] in `{bisexual=n}`.
+         * @param definition The full [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definitionRange]
+         * @param wrapperStart The index in the [definition] that indicated the beginning of the word key, e.g. [linkStart] in `{bisexual=n}`.
+         * @param wrapperEndInclusive The index in the [definition] of the closing character, e.g. [linkEnd] in `{bisexual=n}`.
          */
         fun parseNaspaWordKey(
             definition: ByteSlice,
@@ -145,17 +162,5 @@ data class NaspaWordListEntry internal constructor(
                 TinyWord.of(partOfSpeech)
             )
         }
-    }
-
-    fun toWordDefinition(): WordDefinition {
-        val definitionSlice = rawEntry.slice(definitionRange)
-        return WordDefinition(
-            word = TinyWord.of(rawEntry, wordRange.start, wordRange.endInclusive),
-            language = KnownLanguage.English,
-            partOfSpeech =
-                rawEntry.slice(partOfSpeechRange).toUtf8String(),
-            definition = definitionSlice.toUtf8String(),
-            source = WordSource.NaspaWordList2023
-        )
     }
 }

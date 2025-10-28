@@ -1,12 +1,16 @@
 package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.botlin.ByteSlice
+import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import brava.fightinwords.botlin.TinyRange.Companion.isEmpty
 import brava.fightinwords.botlin.fastSlice
 import brava.fightinwords.botlin.getMemoryMappedBuffer
 import brava.fightinwords.botlin.sequenceOfNotNull
+import brava.fightinwords.botlin.toUtf8String
+import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.parseAnnotatedParts
 import com.google.common.base.Stopwatch
 import java.io.File
 
@@ -85,6 +89,28 @@ class NaspaWordList(
 
     fun isWord(word: TinyWord): Boolean {
         return index.findWordIndex(word) >= 0
+    }
+
+    fun entries(): Sequence<NaspaWordListEntry> {
+        return (0..wordCount).asSequence()
+            .map {
+                val range = index.getRangeByIndex(it)
+                val rawEntry = bytes.slice(range)
+                return@map NaspaWordListEntry.parse(rawEntry)
+            }
+    }
+
+    fun NaspaWordListEntry.toWordDefinition(): WordDefinition {
+        val definitionSlice = rawEntry.slice(definitionRange)
+        return WordDefinition(
+            word = TinyWord.of(rawEntry, wordRange.start, wordRange.endInclusive),
+            language = KnownLanguage.English,
+            partOfSpeech =
+                rawEntry.slice(partOfSpeechRange).toUtf8String(),
+            definition = definitionSlice.toUtf8String(),
+            source = WordSource.NaspaWordList2023,
+            annotatedParts = parseAnnotatedParts(definitionSlice, this@NaspaWordList)
+        )
     }
 }
 

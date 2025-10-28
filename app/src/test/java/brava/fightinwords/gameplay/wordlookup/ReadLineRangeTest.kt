@@ -1,6 +1,7 @@
 package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.Nicknamed.Companion.nicknamed
+import brava.fightinwords.botlin.fastSlice
 import brava.fightinwords.botlin.forEachLineRange
 import org.assertj.core.api.Assertions
 import org.junit.Test
@@ -22,7 +23,7 @@ class ReadLineRangeTest {
         Assertions.assertThat(multilineStrings)
             .allSatisfy { str ->
                 val lineRanges = buildList {
-                    str.value.byteBuffer().forEachLineRange { start, endInclusive ->
+                    str.value.byteBuffer().fastSlice().forEachLineRange { start, endInclusive ->
                         println("Range: $start..$endInclusive")
                         add(start..endInclusive)
                     }

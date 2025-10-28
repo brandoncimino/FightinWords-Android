@@ -1,5 +1,7 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import brava.fightinwords.botlin.fastSlice
+import brava.fightinwords.botlin.getMemoryMappedBuffer
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import org.assertj.core.api.Assertions
@@ -28,7 +30,7 @@ class DefinitionsCsvLookupTest {
     fun fromDefinitionsCsvFile() {
         val tempFile = Files.createTempFile(null,null)
         Files.write(tempFile, firstFewLines.lines())
-        val lookup = DefinitionsCsvLookup(tempFile.toFile())
+        val lookup = DefinitionsCsvLookup(tempFile.toFile().getMemoryMappedBuffer().fastSlice())
 
         val word = "aabomycins".toWord()
         val found = lookup.findDefinition(word)
@@ -41,7 +43,7 @@ class DefinitionsCsvLookupTest {
                     KnownLanguage.English,
                     "Noun",
                     "plural of aabomycin",
-                    false
+                    WordSource.DefinitionsCsv
                 )
             )
     }

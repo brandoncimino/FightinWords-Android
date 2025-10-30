@@ -9,19 +9,29 @@ import java.nio.charset.StandardCharsets
 inline fun ByteSlice.forEachLineRange(
     action: (start: Int, endInclusive: Int) -> Unit,
 ) {
+    forEachLineRange { start, endInclusive, lineIndex ->
+        action(start, endInclusive)
+    }
+}
+
+inline fun ByteSlice.forEachLineRange(
+    action: (start: Int, endInclusive: Int, lineIndex: Int) -> Unit,
+) {
     var lineStart = 0
     var pos = 0
+    var lineIndex = 0
     while (pos < size) {
         val current = get(pos)
         if (current == '\n'.code.toByte()) {
-            action(lineStart, pos - 1)
+            action(lineStart, pos - 1, lineIndex)
             lineStart = pos + 1
+            lineIndex += 1
         }
 
         pos += 1
     }
 
-    action(lineStart, lastIndex)
+    action(lineStart, lastIndex, lineIndex)
 }
 
 fun ByteBuffer.utf8() : CharBuffer {

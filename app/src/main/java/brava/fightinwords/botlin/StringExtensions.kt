@@ -21,7 +21,7 @@ private inline fun <T> Iterable<T>.smartForEach(
 /**
  * Similar to [Iterable.contains], but using [CharSequence.contentEquals] to allow the specification of [ignoreCase].
  *
- * 📎 Though the generated code looks like it might prevent the [List]-specific optimizations in [smartForEach] from being utilized from here
+ * 📎 Though the generated Java code looks like it might prevent the [List]-specific optimizations in [smartForEach] from being utilized from here
  * due to explicit casts of [this] to [Iterable], that isn't the case.
  * In other words, there is no need to `inline` this.
  *
@@ -31,6 +31,10 @@ private inline fun <T> Iterable<T>.smartForEach(
  * @return `true` if [element] is [CharSequence.contentEquals] to any of my elements
  */
 fun Iterable<CharSequence>.contains(element: CharSequence, ignoreCase: Boolean): Boolean {
+    if (ignoreCase == false && this is Set) {
+        return this.contains(element)
+    }
+
     smartForEach {
         if (it.contentEquals(element, ignoreCase)) {
             return true

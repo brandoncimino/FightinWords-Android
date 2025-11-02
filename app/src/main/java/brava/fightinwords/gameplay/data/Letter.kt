@@ -1,6 +1,6 @@
 package brava.fightinwords.gameplay.data
 
-import brava.fightinwords.gameplay.data.Letter.Companion.describe
+import brava.fightinwords.botlin.debugAssert
 import kotlinx.serialization.Serializable
 
 /**
@@ -79,13 +79,13 @@ sealed interface Letter : Comparable<Letter> {
 /**
  * A [Letter] that is strictly limited to lowercase 'a' to 'z', which allows for certain optimizations such as [TinyWord].
  */
-@Serializable
+@Serializable // TODO: probably remove this `@Serializable`
 @JvmInline
-value class TinyLetter private constructor(val byteValue: Byte) : Letter {
-    constructor(character: Char) : this(character.code.toByte())
-
+value class TinyLetter private constructor(
+    val byteValue: Byte,
+) : Letter {
     init {
-        assert(byteValue in lowerA..lowerZ, { "${describe()} must be a lowercase letter between 'a' and 'z'." })
+        debugAssert { byteValue in lowerA..lowerZ }
     }
 
     override val codePoint: Int
@@ -98,7 +98,7 @@ value class TinyLetter private constructor(val byteValue: Byte) : Letter {
     override val character: Char inline get() = byteValue.toInt().toChar()
 
     override fun toString(): String {
-        return byteValue.toString()
+        return byteValue.toInt().toChar().toString()
     }
 
     fun compareTo(other: TinyLetter): Int {
@@ -133,12 +133,22 @@ private const val A = 'A'.code.toByte()
 private const val Z = 'Z'.code.toByte()
 private const val notByte: Byte = (-1).toByte()
 
-private fun Any.notAz() = IllegalArgumentException("Must be a lowercase 'a'..'z' or uppercase 'A'..'Z', not: $this")
+private fun Any.notAz() = IllegalArgumentException(
+    "Must be a lowercase 'a'..'z' or uppercase 'A'..'Z', not: ${
+        when (this) {
+            is Int -> describeCodePoint(this)
+            is Char -> describeCodePoint(this.code)
+            is Byte -> describeCodePoint(this.toInt())
+            else -> this
+        }
+    }"
+)
 private fun Byte.rejectNotAz(original: Any) : Byte = when(this){
     notByte -> throw original.notAz()
     else -> this
 }
 
+@PublishedApi
 internal fun Char.asLowerAz(): Byte = when (this) {
     in 'a'..'z' -> code.toByte()
     in 'A'..'Z' -> (code + 32).toByte()
@@ -151,6 +161,7 @@ internal fun Byte.asLowerAz(): Byte = when (this) {
     else -> -1
 }
 
+@PublishedApi
 internal fun Int.asLowerAz(): Byte = when (this) {
     in 'a'.code..'z'.code -> this.toByte()
     in 'A'.code..'Z'.code -> (this + 32).toByte()
@@ -164,3 +175,11 @@ internal fun Int.toLowerAz(): Byte = asLowerAz().rejectNotAz(this)
 @JvmInline
 @Serializable
 value class CodePointLetter internal constructor(override val codePoint: Int) : Letter
+
+private fun describeCodePoint(codePoint: Int): String =
+    "U+${codePoint} `${Character.toString(codePoint)}` ${Character.getName(codePoint) ?: "unassigned"} (${
+        getCategory(codePoint)
+    })"
+
+private fun getCategory(codePoint: Int): CharCategory =
+    CharCategory.valueOf(Character.getType(codePoint))

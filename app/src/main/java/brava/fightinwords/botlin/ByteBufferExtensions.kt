@@ -1,5 +1,6 @@
 package brava.fightinwords.botlin
 
+import brava.fightinwords.botlin.AsciiBytes.Companion.toAscii
 import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
@@ -152,3 +153,8 @@ fun String.utf8Bytes(
     start: Int = 0,
     endInclusive: Int = lastIndex,
 ): ByteSlice = ByteBuffer.wrap(encodeToByteArray(start, endInclusive + 1, true)).fastSlice()
+
+fun String.asciiBytes(
+    start: Int = 0,
+    endInclusive: Int = lastIndex,
+): AsciiBytes = utf8Bytes(start, endInclusive).toAscii()

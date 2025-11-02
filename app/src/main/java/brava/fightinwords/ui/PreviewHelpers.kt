@@ -9,19 +9,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
-import brava.fightinwords.gameplay.Accepted
-import brava.fightinwords.gameplay.DefinedWordState
+import brava.fightinwords.botlin.asciiBytes
+import brava.fightinwords.botlin.utf8Bytes
 import brava.fightinwords.gameplay.FocusLens
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.Slug
-import brava.fightinwords.gameplay.Unplayed
 import brava.fightinwords.gameplay.WordCategory
-import brava.fightinwords.gameplay.WordState
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import brava.fightinwords.gameplay.scoring.FilterState
+import brava.fightinwords.gameplay.scoring.FocusedWord
+import brava.fightinwords.gameplay.scoring.ScoreboardWord
+import brava.fightinwords.gameplay.scoring.ScoreboardWordVisibility
 import brava.fightinwords.gameplay.scoring.WordFilter
+import brava.fightinwords.gameplay.wordlookup.AnnotatedDefinitionPart
+import brava.fightinwords.gameplay.wordlookup.KnownPartOfSpeech
+import brava.fightinwords.gameplay.wordlookup.NaspaWordList
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
+import brava.fightinwords.gameplay.wordlookup.WordKey
 import brava.fightinwords.gameplay.wordlookup.WordSource
 import brava.fightinwords.ui.typesetter.TypesetterState
 
@@ -29,17 +34,37 @@ object PreviewHelpers {
     val deez = WordDefinition(
         "deez".toWord(),
         KnownLanguage.English,
-        "determiner",
+        KnownPartOfSpeech.Determiner,
         "(humorous) Pronunciation spelling of these.",
-        WordSource.DefinitionsCsv
+        WordSource.DefinitionsCsv,
+        listOf(
+            AnnotatedDefinitionPart.Literal("(humorous) Pronunciation spelling of ".utf8Bytes()),
+            AnnotatedDefinitionPart.Link(WordKey("these".toWord())),
+            AnnotatedDefinitionPart.Literal(".".utf8Bytes())
+        )
     )
 
     val nuts = WordDefinition(
         "nuts".toWord(),
         KnownLanguage.English,
-        "noun",
+        KnownPartOfSpeech.Noun,
         "Plural of nut.",
-        WordSource.NaspaWordList2023
+        WordSource.NaspaWordList2023,
+        listOf(
+            AnnotatedDefinitionPart.Literal("Plural of ".utf8Bytes()),
+            AnnotatedDefinitionPart.Link(WordKey("nut".toWord())),
+            AnnotatedDefinitionPart.Literal(".".utf8Bytes())
+        )
+    )
+
+    val naspaWordList = NaspaWordList(
+        """
+        EAT to consume food [v ATE, EATEN, EATEN, EATING, EATS, ET] : EATER [n]
+        CHOW to {eat=v} [v CHOWED, CHOWING, CHOWS]
+        EATS <eat=v> [v]
+        EATER one that {eats=v} [n EATERS]
+        EXTRA I don't have any substitutions [n]
+    """.trimIndent().asciiBytes()
     )
 
     val longDefinition =
@@ -100,9 +125,9 @@ object PreviewHelpers {
 
     fun ledgermanUiState(
         wordFilterStates: List<WordFilter.State> = wordFilterStates(),
-        visibleWords: List<WordState> = obtuseSubmissions(),
-        focusedWord: FocusLens.State<DefinedWordState>? = FocusLens.State(
-            Accepted(deez, WordCategory.Bonus, 99)
+        visibleWords: List<ScoreboardWord> = obtuseSubmissions(),
+        focusedWord: FocusLens.State<FocusedWord>? = FocusLens.State(
+            FocusedWord(deez, WordCategory.Bonus, 99)
         ),
     ): LedgermanUiState {
         return LedgermanUiState(
@@ -123,7 +148,7 @@ object PreviewHelpers {
     }
 }
 
-internal fun obtuseSubmissions(padWordsToLength: Int? = null): List<DefinedWordState> {
+internal fun obtuseSubmissions(): List<ScoreboardWord> {
     return sequenceOf(
 //        "obtuse",
         "bet",
@@ -173,19 +198,13 @@ internal fun obtuseSubmissions(padWordsToLength: Int? = null): List<DefinedWordS
         "buteos",
         "obtuse",
     )
-        .map {
-            val word = it.padEnd(padWordsToLength ?: 0, 'z').toWord()
-            val accepted = it.hashCode() % 2 == 0
-            val wordDefinition = PreviewHelpers.deez.copy(
-                word = word, source = when {
-                    it.hashCode() % 5 != 0 -> WordSource.NaspaWordList2023
-                    else                   -> WordSource.DefinitionsCsv
-                }
-            )
-            when {
-                accepted -> Accepted(wordDefinition, WordCategory.Core, it.hashCode())
-                else     -> Unplayed(wordDefinition, WordCategory.Core)
+        .map { it ->
+            val visibility = when (it.hashCode() % 2) {
+                0    -> ScoreboardWordVisibility.Full
+                else -> ScoreboardWordVisibility.Masked
             }
+
+            ScoreboardWord(it.toWord(), visibility, WordCategory.Core)
         }
         .toList()
 }

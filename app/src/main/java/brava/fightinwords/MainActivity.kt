@@ -9,8 +9,6 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import brava.fightinwords.botlin.AsciiBytes.Companion.toAsciiUnsafe
@@ -41,9 +39,6 @@ val DefaultCoreWordList: WordList.Id = WordSource.NaspaWordList2023
 class MainActivity : ComponentActivity(), WordSourceLoader {
     private val gameViewModel: GameViewModel by viewModels()
 
-    @Deprecated("remove this")
-    private val snackbarHostState = SnackbarHostState()
-
     /**
      * The format used to save/load the game state from a `savedInstanceState` [Bundle].
      */
@@ -58,6 +53,7 @@ class MainActivity : ComponentActivity(), WordSourceLoader {
      * ```
      */
     private val naspaWordList by lazy {
+        blog { "${this::class.simpleName}.cacheDir: ${this.cacheDir}" }
         return@lazy NaspaWordList(
             getCachedAssetBytes("en/NWL2023.txt").toAsciiUnsafe()
         )
@@ -68,6 +64,7 @@ class MainActivity : ComponentActivity(), WordSourceLoader {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        blog { "onCreate" }
         super.onCreate(savedInstanceState)
 
         val saveGameState = savedInstanceState?.loadSaveGameState()
@@ -91,8 +88,7 @@ class MainActivity : ComponentActivity(), WordSourceLoader {
         setContent {
             FightinWordsTheme {
                 Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    snackbarHost = { SnackbarHost(snackbarHostState) }
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     GameScreen(
                         gameViewModel.gameScreenState.collectAsState().value,
@@ -163,6 +159,7 @@ ${it.stackTraceToString()}
         }
     }
 
-    override val allDefinitionLookups: List<DefinitionLookup> =
+    override val allDefinitionLookups: List<DefinitionLookup> by lazy {
         listOf(naspaWordList, definitionsCsvLookup)
+    }
 }

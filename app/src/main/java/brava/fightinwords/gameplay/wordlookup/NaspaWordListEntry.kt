@@ -1,5 +1,6 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import brava.fightinwords.botlin.AsciiBytes
 import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.botlin.Substring.Companion.fastSlice
@@ -7,6 +8,7 @@ import brava.fightinwords.botlin.TinyRange
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import brava.fightinwords.botlin.indexOf
 import brava.fightinwords.gameplay.data.TinyWord
+import brava.fightinwords.gameplay.data.TinyWord.Companion.toTinyWord
 import brava.fightinwords.gameplay.wordlookup.AnnotatedDefinitionPart.Companion.appendInline
 import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.linkEnd
 import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.linkStart
@@ -21,20 +23,25 @@ import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.linkS
  * ```
  * Is `< DO` an interpolation that should be replaced with `past tense of {do:v}`?
  * But then, what's the deal with `DOS < DO`?
+ *
+ * MISSING GLOSS?!
+ * ```
+ * DEFENESTRATE [v DEFENESTRATED, DEFENESTRATES, DEFENESTRATING] : DEFENESTRATION [n]
+ * ```
  */
 @ConsistentCopyVisibility
 data class NaspaWordListEntry internal constructor(
-    val rawEntry: ByteSlice,
+    val rawEntry: AsciiBytes,
     val wordRange: TinyRange,
     val definitionRange: TinyRange,
     val partOfSpeechRange: TinyRange,
 ) {
     companion object {
-        const val inlineStart = '<'.code.toByte()
-        const val inlineEnd = '>'.code.toByte()
+        const val inlineStart = '<'
+        const val inlineEnd = '>'
 
-        const val linkStart = '{'.code.toByte()
-        const val linkEnd = '}'.code.toByte()
+        const val linkStart = '{'
+        const val linkEnd = '}'
 
         private const val space = ' '.code.toByte()
         private const val leftSquareBracket = '['.code.toByte()
@@ -42,13 +49,17 @@ data class NaspaWordListEntry internal constructor(
         private const val equals = '='.code.toByte()
 
         fun parse(
-            rawEntry: ByteSlice,
+            rawEntry: AsciiBytes,
         ): NaspaWordListEntry {
-            val spaceAfterWord = rawEntry.indexOf({it == space})
-            val openingSquareBracket = rawEntry.indexOf({it == leftSquareBracket}, startIndex = spaceAfterWord + 1)
+            val spaceAfterWord = rawEntry.bytes.indexOf({ it == space })
+            val openingSquareBracket =
+                rawEntry.bytes.indexOf({ it == leftSquareBracket }, startIndex = spaceAfterWord + 1)
 
             val partOfSpeechStartsAt = openingSquareBracket + 1
-            val partOfSpeechEndsAt = rawEntry.indexOf({ it == rightSquareBracket || it == space }, startIndex = partOfSpeechStartsAt)
+            val partOfSpeechEndsAt = rawEntry.bytes.indexOf(
+                { it == rightSquareBracket || it == space },
+                startIndex = partOfSpeechStartsAt
+            )
 
             return NaspaWordListEntry(
                 rawEntry = rawEntry,
@@ -59,7 +70,7 @@ data class NaspaWordListEntry internal constructor(
         }
 
         fun parseAnnotatedParts(
-            def: ByteSlice,
+            def: AsciiBytes,
             naspaWordList: NaspaWordList,
         ): List<AnnotatedDefinitionPart> {
             val parts = buildList {
@@ -67,8 +78,8 @@ data class NaspaWordListEntry internal constructor(
                     sourceStart = 0,
                     sourceEndInclusive = def.lastIndex,
                     isWrapperStart = {
-                        val byte = def[it]
-                        byte == linkStart || byte == inlineStart
+                        val char = def[it]
+                        char == linkStart || char == inlineStart
                     },
                     isWrapperEndInclusive = { rangeStart, rangeEndInclusive ->
                         val firstByte = def[rangeStart]
@@ -85,7 +96,7 @@ data class NaspaWordListEntry internal constructor(
                                 def.slice(
                                     rangeStart,
                                     rangeEndInclusive
-                                )
+                                ).bytes
                             )
                         )
                     },
@@ -158,8 +169,8 @@ data class NaspaWordListEntry internal constructor(
             val partOfSpeech =
                 definition.fastSlice(delimiterIndex + 1, definition.length - wordLength - 1)
             return WordKey(
-                TinyWord.of(wordSlice),
-                TinyWord.of(partOfSpeech)
+                wordSlice.toTinyWord(),
+                partOfSpeech.toTinyWord()
             )
         }
     }

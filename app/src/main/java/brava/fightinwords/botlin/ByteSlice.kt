@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 /**
  * A *_read-only_* sub-section of a [ByteBuffer].
  *
- * Advantages of [brava.fightinwords.botlin.ByteSlice] over [ByteBuffer]:
+ * Advantages of [ByteSlice] over [ByteBuffer]:
  * - Read-only.
  * - Uses friendly, standard collection idioms like [size] instead of [ByteBuffer.limit].
  * - Avoids @[RequiresApi]&lpar;[Build.VERSION_CODES.UPSIDE_DOWN_CAKE]) by using [fastSlice] instead of [ByteBuffer.slice].
@@ -40,7 +40,6 @@ data class ByteSlice(
                 endInclusive - start + 1
             )
         } else {
-//            throw UnsupportedOperationException("I don't support ${Build.VERSION.SDK_INT}")
             // You've got an old phone; deal with the extra memory overhead while I copy everything into a fresh byte array
             val length = endInclusive - start + 1
             val byteArray = ByteArray(length)
@@ -53,7 +52,7 @@ data class ByteSlice(
     }
 
     val lastIndex inline get() = size - 1
-    val indices inline get() = 0..lastIndex
+    val indices inline get() = 0 until size
 
     fun slice(start: Int, endInclusive: Int): ByteSlice {
         if (endInclusive < start) {

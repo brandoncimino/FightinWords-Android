@@ -3,9 +3,6 @@ package brava.fightinwords.gameplay
 import brava.fightinwords.gameplay.data.Word
 import kotlinx.serialization.Serializable
 
-/**
- * This is basically [WordState], but without the [DefinedWordState.wordDefinition].
- */
 @Serializable
 sealed interface SubmissionResult {
     val word: Word

@@ -1,37 +1,46 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import brava.fightinwords.botlin.ByteSlice
+import brava.fightinwords.botlin.utf8Bytes
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.Word
-import kotlinx.serialization.Serializable
 
-@Serializable
 data class WordDefinition(
     val word: Word,
     val language: KnownLanguage,
-    val partOfSpeech: String?,
+    val partOfSpeech: PartOfSpeech?,
     val definition: String,
     val source: DefinitionLookup.Id,
+    val annotatedParts: List<AnnotatedDefinitionPart> = listOf(),
 )
 
-sealed interface WordDefinitionSubstitution {
-    val replacementRange: IntRange
-    val wordKey: WordKey
+sealed interface AnnotatedDefinitionPart {
 
-    /**
-     * ## For [NaspaWordListEntry]:
-     * `<duo=n>` in ```DUI <duo=n> [n]```
-     */
-    data class Inline(
-        override val replacementRange: IntRange,
-        override val wordKey: WordKey,
-    ) : WordDefinitionSubstitution
+    data class Literal(val text: ByteSlice) : AnnotatedDefinitionPart
 
     /**
      * ## For [NaspaWordListEntry]:
      * `{brassiere=n}` in `BRA a {brassiere=n} [n BRAS]`
      */
-    data class Link(
-        override val replacementRange: IntRange,
-        override val wordKey: WordKey,
-    ) : WordDefinitionSubstitution
+    data class Link(val wordKey: WordKey) : AnnotatedDefinitionPart
+
+    /**
+     * ## For [NaspaWordListEntry]:
+     * `<duo=n>` in ```DUI <duo=n> [n]```
+     */
+    data class Inline(val inlineDefinition: WordDefinition) : AnnotatedDefinitionPart
+
+    companion object {
+        fun MutableList<AnnotatedDefinitionPart>.appendInline(
+            wordKey: WordKey,
+            definitionLookup: DefinitionLookup,
+        ) {
+            val definitionToInline = definitionLookup.findDefinition(wordKey.word)
+
+            when (definitionToInline) {
+                null -> add(Literal("⚠️ Definition not found: $wordKey".utf8Bytes())) // TODO: add some kind of error reporting for this
+                else -> add(Inline(definitionToInline))
+            }
+        }
+    }
 }

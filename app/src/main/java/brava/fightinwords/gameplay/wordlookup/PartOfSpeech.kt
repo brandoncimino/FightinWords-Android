@@ -1,8 +1,32 @@
 package brava.fightinwords.gameplay.wordlookup
 
+import brava.fightinwords.botlin.AliasMatcher
 import brava.fightinwords.botlin.AliasMatcher.Companion.aliasMatcher
 
-sealed interface PartOfSpeech
+sealed interface PartOfSpeech {
+    companion object {
+        fun tryParse(nameOrAbbreviation: CharSequence?): PartOfSpeech? {
+            if (nameOrAbbreviation?.isEmpty() ?: true) {
+                return null
+            }
+
+            val matched = KnownPartOfSpeech.aliasMatcher.tryMatch(nameOrAbbreviation)
+
+            return when (matched) {
+                is AliasMatcher.Ambiguous<KnownPartOfSpeech>   -> {
+                    // TODO: Some kind of reporting for this
+                    UnknownPartOfSpeech(nameOrAbbreviation.toString())
+                }
+
+                is AliasMatcher.Unambiguous<KnownPartOfSpeech> -> matched.matchedValue
+                null                                           -> {
+                    // TODO: Some kind of reporting for this
+                    UnknownPartOfSpeech(nameOrAbbreviation.toString())
+                }
+            }
+        }
+    }
+}
 
 /**
  * From Wikipedia's [part of speech](https://en.wikipedia.org/wiki/Part_of_speech):

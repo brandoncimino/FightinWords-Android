@@ -1,7 +1,9 @@
 package brava.fightinwords.gameplay.data
 
+import androidx.compose.ui.util.fastForEach
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
+import brava.fightinwords.gameplay.data.TinyWord.Companion.asTinyWord
 import brava.fightinwords.gameplay.data.Word.Companion.indices
 import brava.fightinwords.ui.submissions.appendCodePoint
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -14,8 +16,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import java.util.function.IntFunction
-import kotlin.math.min
 
 /**
  * Let’s estimate the **serialized size in CBOR** for both approaches, given your constraints:
@@ -116,6 +116,7 @@ sealed interface Word : Comparable<Word> {
             value: Word,
         ) {
             LongArraySerializer()
+            // TODO: What was I even doing here?
             val cborEncoder = encoder as CborEncoder
 //            encoder.encodeSerializableValue(ByteArraySerializer(), value)
             encoder.encodeString(value.toString())
@@ -134,14 +135,27 @@ sealed interface Word : Comparable<Word> {
 
     companion object {
         fun Iterable<Letter>.toWord(): Word {
-            return when (this) {
-                is Word -> this
-                else -> WordLetters(this.toList())
+            if (this is Word) {
+                return this
             }
+
+            if (this is List) {
+                val attemptedTiny = TinyWord.tryCreate(
+                    { this[it].codePoint },
+                    0,
+                    size
+                )
+
+                if (attemptedTiny != null) {
+                    return attemptedTiny
+                }
+            }
+
+            return LetterListWord(this.toList())
         }
 
         fun String.toWord(): Word {
-            return StringWord(this)
+            return asTinyWord() ?: StringWord(this)
         }
 
         val Word.indices inline get() = 0 until length
@@ -196,7 +210,7 @@ sealed interface Word : Comparable<Word> {
 
 @Serializable
 @JvmInline
-value class StringWord(val stringValue: String) : Word {
+private value class StringWord(val stringValue: String) : Word {
     override val length: Int
         get() = stringValue.length
 
@@ -213,101 +227,41 @@ value class StringWord(val stringValue: String) : Word {
     }
 }
 
-private class LettersString(val stringValue: String) : AbstractList<Letter>() {
-    override val size: Int = stringValue.length
-    override fun get(index: Int): Letter = TinyLetter(stringValue[index])
-}
-
 /**
- * A collection of [Letter]s.
- *
- * TODO: Make [TinyWord] more interchangeable with [Word]. Options include:
- *   - Make [Word] into a `sealed interface`
+ * A [Word] constructed from an existing [List] of [Letter]s.
  */
-//@Serializable(WordLetters.Serializer::class)
 @JvmInline
-value class WordLetters(val letters: List<Letter>) : List<Letter> by letters, Comparable<Word>,
-                                                     Word {
-
+private value class LetterListWord(val letters: List<Letter>) : Word {
     override val length: Int
-        get() = size
-
-    @Suppress("DEPRECATION")
-    @Deprecated("This is a mandatory override of a deprecated Java method")
-    override fun <T : Any?> toArray(generator: IntFunction<Array<out T?>?>): Array<out T?> =
-        super<List>.toArray(generator)
-
-    override fun toString(): String {
-        return when (this.letters) {
-            is LettersString -> this.letters.stringValue
-            else             -> this.joinToString(separator = "") { it.toString() }
-        }
-    }
-
-    fun compareTo(other: WordLetters): Int {
-        if (this.letters is LettersString && other.letters is LettersString) {
-            return this.letters.stringValue.compareTo(other.letters.stringValue)
-        }
-
-        val shorter = min(this.length, other.length)
-
-        for (i in 0 until shorter) {
-            val comparison = this.letters[i].compareTo(other.letters[i])
-            if (comparison != 0) {
-                return comparison
-            }
-        }
-
-        return 0
-    }
-
-    override fun containsAll(elements: Collection<Letter>): Boolean {
-        return letters.containsAll(elements)
-    }
-
-    override fun indexOf(element: Letter): Int {
-        return letters.indexOf(element)
-    }
-
-    override fun lastIndexOf(element: Letter): Int {
-        return letters.lastIndexOf(element)
-    }
-
-    override fun isEmpty(): Boolean {
-        return letters.isEmpty()
-    }
-
-    override fun listIterator(): ListIterator<Letter> {
-        return letters.listIterator()
-    }
-
-    override fun listIterator(index: Int): ListIterator<Letter> {
-        return letters.listIterator(index)
-    }
-
-    override fun contains(element: Letter): Boolean {
-        return letters.contains(element)
-    }
-
-    override fun iterator(): Iterator<Letter> {
-        return letters.iterator()
-    }
-
-    override val size: Int
         get() = letters.size
 
-    override fun subList(fromIndex: Int, toIndex: Int): List<Letter> {
-        return letters.subList(fromIndex, toIndex)
+    init {
+        if (letters.all { it is TinyLetter }) {
+            throw IllegalArgumentException("You shouldn't have constructed a ${this::class.simpleName} using only ${TinyLetter::class.simpleName}s - you should have have simplified it into a ${TinyWord::class.simpleName}!")
+        }
+    }
+
+    override fun toString(): String {
+        return StringBuilder()
+            .appendWord(this)
+            .toString()
+    }
+
+    override fun get(index: Int): Letter {
+        return letters[index]
     }
 }
 
-fun Appendable.append(word: Word): Appendable {
+fun <T : Appendable> T.appendWord(word: Word): T {
     if (word.isEmpty()) {
         return this
     }
 
     return when (word) {
-        is StringWord -> append(word.stringValue)
+        is StringWord     -> {
+            append(word.stringValue)
+            this
+        }
         is TinyWord   -> {
             for (i in word.indices) {
                 append(word[i].character)
@@ -315,9 +269,9 @@ fun Appendable.append(word: Word): Appendable {
             this
         }
 
-        else          -> {
-            for (i in word.indices) {
-                appendCodePoint(word[i].codePoint)
+        is LetterListWord -> {
+            word.letters.fastForEach {
+                appendCodePoint(it.codePoint)
             }
             this
         }

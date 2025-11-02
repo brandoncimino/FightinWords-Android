@@ -7,6 +7,8 @@ import brava.fightinwords.botlin.utf8
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.data.Word.Companion.toWord
+import java.nio.CharBuffer
 
 fun DefinitionsCsvLookup(
     bytes: ByteSlice,
@@ -42,7 +44,7 @@ class DefinitionsCsvLookup(
         }
 
         val rawEntry = bytes.slice(range)
-        return WordLookupHelpers.parseDefinitionCsvLine(
+        return parseDefinitionCsvLine(
             // TODO: this is super gross
             rawEntry.toByteBuffer().utf8(),
             language
@@ -76,6 +78,21 @@ class DefinitionsCsvLookup(
                 lineStart,
                 lineEndInclusive,
                 bytes::get
+            )
+        }
+
+        fun parseDefinitionCsvLine(line: CharBuffer, language: KnownLanguage): WordDefinition {
+            val cells = line.split(',', limit = 4)
+            assert(cells.size == 4)
+
+            val (word, partOfSpeech, isNaspaWord, definition) = cells
+
+            return WordDefinition(
+                word = word.trim { it.isLetter() == false }.toWord(),
+                language = language,
+                partOfSpeech = PartOfSpeech.tryParse(partOfSpeech),
+                definition = definition,
+                source = WordSource.DefinitionsCsv
             )
         }
     }

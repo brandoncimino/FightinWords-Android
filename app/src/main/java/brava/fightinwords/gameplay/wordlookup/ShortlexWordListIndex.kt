@@ -24,6 +24,15 @@ class ShortlexWordListIndex private constructor(
     private val entryRanges: LongList,
     val wordLengthCounts: IntIntMap,
 ) {
+    init {
+        require(
+            entryWords.size == entryRanges.size
+            && entryWords.size == wordLengthCounts.valueSum()
+        ) {
+            "We must have the same number of `entryWords` (${entryWords.size}), `entryRanges` (${entryRanges.size}), and total `wordLengthCounts` (${wordLengthCounts.valueSum()})!"
+        }
+    }
+
     @Transient
     val wordCount = entryWords.size
 
@@ -81,18 +90,12 @@ class ShortlexWordListIndex private constructor(
             stopOnEmptyWord: Boolean,
         ) {
             var previousWord = TinyWord.empty
-            bytes.forEachLineRange { start, endInclusive ->
+            bytes.forEachLineRange { start, endInclusive, lineIndex ->
                 if (endInclusive < start) {
                     return@forEachLineRange
                 }
 
                 val word = wordExtractor(start, endInclusive)
-
-                // Make sure that we do actually have a shortlex word list
-                if (word.shortlexCompareTo(previousWord) < 0) {
-                    throw IllegalStateException("The word `$word` comes before the previous word `$previousWord` in shortlex order, which means that our input is NOT in shortlex order!")
-                }
-                previousWord = word
 
                 if (word.isEmpty()) {
                     when (stopOnEmptyWord) {
@@ -100,6 +103,12 @@ class ShortlexWordListIndex private constructor(
                         false -> return@forEachLineRange
                     }
                 }
+
+                // Make sure that we do actually have a shortlex word list
+                if (word.shortlexCompareTo(previousWord) < 0) {
+                    throw IllegalStateException("The word `$word` on line ${lineIndex + 1} comes before the previous word `$previousWord` in shortlex order, which means that our input is NOT in shortlex order!")
+                }
+                previousWord = word
 
                 forEachRange(word, TinyRange.startEndInclusive(start, endInclusive))
             }
@@ -119,6 +128,12 @@ private fun IntIntMap.keyRange(): IntRange {
         max = max(max, it)
     }
     return min..max
+}
+
+private fun IntIntMap.valueSum(): Int {
+    var total = 0
+    forEachValue { total += it }
+    return total
 }
 
 private fun Long.toWord(): TinyWord = TinyWord(this)

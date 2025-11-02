@@ -13,6 +13,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import brava.fightinwords.botlin.AsciiBytes.Companion.toAsciiUnsafe
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.GameInProgress
 import brava.fightinwords.gameplay.GamePlan
@@ -57,7 +58,9 @@ class MainActivity : ComponentActivity(), WordSourceLoader {
      * ```
      */
     private val naspaWordList by lazy {
-        return@lazy NaspaWordList(getCachedAssetBytes("en/NWL2023.txt"))
+        return@lazy NaspaWordList(
+            getCachedAssetBytes("en/NWL2023.txt").toAsciiUnsafe()
+        )
     }
 
     private val definitionsCsvLookup by lazy {

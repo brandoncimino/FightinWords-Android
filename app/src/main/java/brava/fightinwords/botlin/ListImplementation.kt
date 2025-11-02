@@ -282,19 +282,4 @@ internal object ListImplementation {
         }
     }
 
-    inline fun forEachDuplicate(
-        start: Int,
-        endInclusive: Int,
-        equality: (Int, Int) -> Boolean,
-        action: (originalIndex: Int, duplicateIndex: Int) -> Unit,
-    ) {
-        for (next in start..endInclusive) {
-            for (earlier in start until next) {
-                if (equality(earlier, next)) {
-                    action(earlier, next)
-                }
-            }
-        }
-    }
-
 }

@@ -1,14 +1,14 @@
 package brava.fightinwords.gameplay.wordlookup
 
-import brava.fightinwords.botlin.ByteSlice
-import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
+import brava.fightinwords.botlin.AsciiBytes
+import brava.fightinwords.botlin.AsciiBytes.Companion.toAscii
 import brava.fightinwords.botlin.TinyRange.Companion.isEmpty
 import brava.fightinwords.botlin.fastSlice
 import brava.fightinwords.botlin.getMemoryMappedBuffer
 import brava.fightinwords.botlin.sequenceOfNotNull
-import brava.fightinwords.botlin.toUtf8String
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
+import brava.fightinwords.gameplay.data.TinyWord.Companion.toTinyWord
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.parseAnnotatedParts
 import com.google.common.base.Stopwatch
@@ -18,14 +18,14 @@ fun NaspaWordList(
     file: File,
 ): NaspaWordList {
     val stopwatch = Stopwatch.createStarted()
-    val nwl = NaspaWordList(file.getMemoryMappedBuffer().fastSlice())
+    val nwl = NaspaWordList(file.getMemoryMappedBuffer().fastSlice().toAscii())
     val elapsed = stopwatch.elapsed()
     println("Loaded $file in $elapsed")
     return nwl
 }
 
 fun NaspaWordList(
-    bytes: ByteSlice,
+    bytes: AsciiBytes,
 ): NaspaWordList {
     val index = parseWordLineRanges(
         bytes,
@@ -36,7 +36,7 @@ fun NaspaWordList(
 
 class NaspaWordList(
     val index: ShortlexWordListIndex,
-    private val bytes: ByteSlice,
+    private val bytes: AsciiBytes,
 ) : DefinitionLookup, ShortlexWordList {
     override val id: WordList.Id get() = WordSource.NaspaWordList2023
 
@@ -58,7 +58,7 @@ class NaspaWordList(
         }
     }
 
-    fun findRawEntry(word: TinyWord): ByteSlice? {
+    fun findRawEntry(word: TinyWord): AsciiBytes? {
         val range = index.findWordRange(word)
         return when {
             range.isEmpty -> null
@@ -92,7 +92,7 @@ class NaspaWordList(
     }
 
     fun entries(): Sequence<NaspaWordListEntry> {
-        return (0..wordCount).asSequence()
+        return (0 until wordCount).asSequence()
             .map {
                 val range = index.getRangeByIndex(it)
                 val rawEntry = bytes.slice(range)
@@ -103,11 +103,12 @@ class NaspaWordList(
     fun NaspaWordListEntry.toWordDefinition(): WordDefinition {
         val definitionSlice = rawEntry.slice(definitionRange)
         return WordDefinition(
-            word = TinyWord.of(rawEntry, wordRange.start, wordRange.endInclusive),
+            word = rawEntry.slice(wordRange).toTinyWord(),
             language = KnownLanguage.English,
-            partOfSpeech =
-                rawEntry.slice(partOfSpeechRange).toUtf8String(),
-            definition = definitionSlice.toUtf8String(),
+            partOfSpeech = KnownPartOfSpeech.aliasMatcher.requireMatch(
+                rawEntry.slice(partOfSpeechRange)
+            ),
+            definition = definitionSlice.toString(),
             source = WordSource.NaspaWordList2023,
             annotatedParts = parseAnnotatedParts(definitionSlice, this@NaspaWordList)
         )
@@ -115,14 +116,14 @@ class NaspaWordList(
 }
 
 private fun parseWordLineRanges(
-    bytes: ByteSlice,
+    bytes: AsciiBytes,
 ): ShortlexWordListIndex {
-    return ShortlexWordListIndex.build(bytes) { lineStart, lineEndInclusive ->
+    return ShortlexWordListIndex.build(bytes.bytes) { lineStart, lineEndInclusive ->
         TinyWord.extractTinyWordFromRange(
             ' '.code.toByte(),
             lineStart,
             lineEndInclusive,
-            bytes::get,
+            bytes::getByte,
             TinyWord.Companion.LongWordHandling.Skip
         )
     }

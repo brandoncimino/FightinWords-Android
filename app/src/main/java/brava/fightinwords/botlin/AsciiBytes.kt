@@ -1,6 +1,7 @@
 package brava.fightinwords.botlin
 
 import brava.fightinwords.botlin.AsciiBytes.Companion.isAscii
+import brava.fightinwords.botlin.TinyRange.Companion.endInclusive
 import org.jetbrains.annotations.VisibleForTesting
 
 /**
@@ -13,6 +14,7 @@ data class AsciiBytes private constructor(val bytes: ByteSlice) : CharSequence {
         get() = bytes.size
 
     override fun get(index: Int): Char = bytes[index].toInt().toChar()
+    fun getByte(index: Int): Byte = bytes[index]
 
     override fun subSequence(startIndex: Int, endIndex: Int): AsciiBytes {
         return AsciiBytes(
@@ -21,6 +23,14 @@ data class AsciiBytes private constructor(val bytes: ByteSlice) : CharSequence {
                 endInclusive = endIndex - 1
             )
         )
+    }
+
+    fun slice(start: Int, endInclusive: Int): AsciiBytes {
+        return subSequence(start, endInclusive + 1)
+    }
+
+    fun slice(tinyRange: TinyRange): AsciiBytes {
+        return slice(tinyRange.start, tinyRange.endInclusive)
     }
 
     companion object {
@@ -49,5 +59,16 @@ data class AsciiBytes private constructor(val bytes: ByteSlice) : CharSequence {
             require(isAscii()) { "The input contained non-ASCII bytes." }
             return AsciiBytes(this)
         }
+
+        fun ByteSlice.toAsciiUnsafe(): AsciiBytes {
+            debugAssert { isAscii() }
+            return AsciiBytes(this)
+        }
+    }
+
+    override fun toString(): String {
+        return StringBuilder(length)
+            .append(this)
+            .toString()
     }
 }

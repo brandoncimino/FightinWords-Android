@@ -7,10 +7,12 @@ import kotlinx.serialization.StringFormat
 import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.encodeToHexString
 import kotlinx.serialization.serializer
+import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.IterableAssert
 import org.assertj.core.api.ObjectAssert
 import java.util.function.Consumer
+import kotlin.random.Random
 
 object Besting {
 
@@ -110,3 +112,68 @@ data class Nicknamed<T>(val value: T, val nickname: String) {
         return nickname
     }
 }
+
+fun <A, B> cartesianProduct(
+    a: Iterable<A>,
+    b: Iterable<B>,
+): Sequence<Pair<A, B>> {
+    return sequence {
+        for (aItem in a) {
+            for (bItem in b) {
+                yield(aItem to bItem)
+            }
+        }
+    }
+}
+
+fun <A, B, C> cartesianProduct(
+    a: Iterable<A>,
+    b: Iterable<B>,
+    c: Iterable<C>,
+): Sequence<Triple<A, B, C>> {
+    return sequence {
+        for (aItem in a) {
+            for (bItem in b) {
+                for (cItem in c) {
+                    yield(Triple(aItem, bItem, cItem))
+                }
+            }
+        }
+    }
+}
+
+fun CharSequence.mangleCase(random: Random = Random): String {
+    return buildString {
+        this@mangleCase.codePoints()
+            .map {
+                when (random.nextBoolean()) {
+                    true -> Character.toUpperCase(it)
+                    false -> Character.toLowerCase(it)
+                }
+            }
+            .forEach { appendCodePoint(it) }
+    }
+}
+
+//region Result extensions
+
+inline fun <reified T> Result<T>.prettyName() = "${this::class.simpleName}<${T::class.simpleName}>"
+
+inline fun <reified T> Result<T>.success(): ObjectAssert<T> {
+    return Assertions.assertThat(
+        this.getOrElse {
+            Assertions.fail(
+                "Expected the ${prettyName()} to have succeeded!",
+                it
+            )
+        }
+    )
+}
+
+inline fun <reified T> Result<T>.failure(): AbstractThrowableAssert<*, *> {
+    return Assertions.assertThatCode {
+        this.getOrThrow()
+    }.describedAs { prettyName() }
+}
+
+//endregion

@@ -8,8 +8,8 @@ import brava.fightinwords.gameplay.hr.EmployeeFactory
 import brava.fightinwords.gameplay.hr.EmployeeFactory.Companion.load
 import brava.fightinwords.gameplay.scoring.Ledgerman
 import brava.fightinwords.gameplay.scoring.Ledgerman.Companion.getSerializableState
-import brava.fightinwords.gameplay.wordlookup.DefinitionLookup.Companion.requireDefinition
 import brava.fightinwords.gameplay.wordlookup.Factotum.Companion.getFactotum
+import brava.fightinwords.gameplay.wordlookup.WordKey
 import brava.fightinwords.gameplay.wordlookup.WordSourceLoader
 
 /**
@@ -52,7 +52,8 @@ class GameInProgress(
                     unsubmittedWordVisibility = gamePlan.unsubmittedWordVisibility,
                     wordLengthRange = gamePlan.wordLengthRange,
                     arbiter = Arbiter(factotum),
-                    coreWordPool = coreWordPool
+                    coreWordPool = coreWordPool,
+                    sharedResources = sharedResources
                 ),
                 onStatePossiblyChanged = onStatePossiblyChanged
             )
@@ -87,9 +88,7 @@ class GameInProgress(
         val submissionResult = arbiter.submitWord(submittedWord)
 
         if (submissionResult is SubmissionResult.Accepted) {
-            val definition = sharedResources.factotum.requireDefinition(submissionResult.word)
-            val wordState = Accepted(definition, submissionResult.category, submissionResult.points)
-            ledgerman.focusOnWord(wordState)
+            ledgerman.focusOnWord(WordKey(submittedWord))
         }
 
         onStatePossiblyChanged()

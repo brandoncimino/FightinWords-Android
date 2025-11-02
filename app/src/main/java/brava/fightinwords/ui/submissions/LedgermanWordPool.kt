@@ -6,17 +6,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
-import brava.fightinwords.gameplay.DefinedWordState
-import brava.fightinwords.gameplay.WordState
+import brava.fightinwords.gameplay.scoring.ScoreboardWord
+import brava.fightinwords.gameplay.wordlookup.WordKey
 import brava.fightinwords.ui.DpRatio.Companion.dpRatio
 import brava.fightinwords.ui.PaddingRatio
 import brava.fightinwords.ui.PreviewHelpers
 
 @Composable
 fun LedgermanWordPool(
-    visibleWords: List<WordState>,
+    visibleWords: List<ScoreboardWord>,
     modifier: Modifier = Modifier,
-    onFocusWord: (WordState) -> Unit = {},
+    onFocusWord: (WordKey) -> Unit = {},
     wordPadding: PaddingRatio = defaultWordPadding,
 ) {
     if (visibleWords.isEmpty()) {
@@ -29,11 +29,7 @@ fun LedgermanWordPool(
         ScrollableWordPool(
             visibleWords = visibleWords,
             modifier = modifier,
-            onWordClick = {
-                if (it is DefinedWordState) {
-                    onFocusWord(it)
-                }
-            },
+            onWordClick = { onFocusWord(WordKey(it)) },
             wordPadding = wordPadding
         )
     }

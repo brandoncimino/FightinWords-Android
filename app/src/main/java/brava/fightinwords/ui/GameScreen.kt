@@ -14,12 +14,13 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import brava.fightinwords.gameplay.Accepted
-import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.FocusLens
 import brava.fightinwords.gameplay.Typesetter
-import brava.fightinwords.gameplay.Unplayed
+import brava.fightinwords.gameplay.WordCategory
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
+import brava.fightinwords.gameplay.scoring.FocusedWord
+import brava.fightinwords.gameplay.scoring.ScoreboardWord
+import brava.fightinwords.gameplay.scoring.ScoreboardWordVisibility
 import brava.fightinwords.ui.PreviewHelpers.deez
 import brava.fightinwords.ui.submissions.DefinitionBox
 import brava.fightinwords.ui.submissions.LedgermanWordPool
@@ -59,7 +60,8 @@ fun GameScreen(
                                     .height(height = 150.dp)
                                     .fillMaxWidth()
                                     .padding(10.dp),
-                                onClick = gameScreenInteractions.onExpandFocusedWord
+                                onClick = gameScreenInteractions.onExpandFocusedWord,
+                                onWordClick = gameScreenInteractions.onFocusWord
                             )
                         }
 
@@ -88,7 +90,8 @@ fun GameScreen(
                     ) {
                         DefinitionBox(
                             focusLensState.target,
-                            onClick = gameScreenInteractions.onCollapseFocusedWord
+                            onClick = gameScreenInteractions.onCollapseFocusedWord,
+                            onWordClick = gameScreenInteractions.onFocusWord
                         )
                     }
                 }
@@ -108,34 +111,13 @@ fun GameScreenPreview() {
         }
     }
 
-    val visibleWords = listOf(
-        Unplayed(deez.copy(word = "aaaa".toWord(), isNaspaWord = true)),
-        Accepted(deez.copy(word = "bbbb".toWord(), isNaspaWord = true), 99),
-        Unplayed(deez.copy(word = "cccc".toWord(), isNaspaWord = false)),
-        Accepted(deez.copy(word = "dddd".toWord(), isNaspaWord = false), 999),
-    )
-
-    val wordFilterStates = PreviewHelpers.wordFilterStates()
-
-    val focusedWord = FocusLens.State<DefinedWordState>(Accepted(deez, 99))
     val ledgermanUiState = LedgermanUiState(
-        wordFilterStates,
-        visibleWords,
-        focusedWord
-    )
-
-    val uiSettings = UiSettings(
-//        sectionOrder = listOf(
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//            UiSettings.UiSection.Definition,
-//        )
+        PreviewHelpers.wordFilterStates(),
+        listOf(
+            ScoreboardWord("full".toWord(), ScoreboardWordVisibility.Full, WordCategory.Core),
+            ScoreboardWord("masked".toWord(), ScoreboardWordVisibility.Masked, WordCategory.Bonus)
+        ),
+        FocusLens.State(FocusedWord(deez, null, null))
     )
 
     GameScreen(
@@ -145,19 +127,4 @@ fun GameScreenPreview() {
         ),
         gameScreenInteractions = PreviewHelpers.gameScreenInteractions
     )
-
-//    GameScreen(
-//        GameUi(
-//            typesetter.createUi(uiSettings),
-//            LedgermanUi(
-//                FocusLensUi(
-//                    { focusedWord },
-//                    uiSettings
-//                ),
-//                uiSettings,
-//                {ledgermanUiState}
-//            ),
-//            uiSettings
-//        )
-//    )
 }

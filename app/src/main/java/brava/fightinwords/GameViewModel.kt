@@ -3,17 +3,22 @@ package brava.fightinwords
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import brava.fightinwords.botlin.blog
-import brava.fightinwords.gameplay.DefinedWordState
 import brava.fightinwords.gameplay.GameInProgress
-import brava.fightinwords.gameplay.Umpire
-import brava.fightinwords.gameplay.WordState
+import brava.fightinwords.gameplay.SubmissionResult
 import brava.fightinwords.gameplay.scoring.WordFilter
+import brava.fightinwords.gameplay.wordlookup.WordKey
 import brava.fightinwords.ui.GameScreenInteractions
 import brava.fightinwords.ui.GameScreenState
 import brava.fightinwords.ui.GameScreenState.InGame.Companion.getScreenState
 import brava.fightinwords.ui.typesetter.SortButton
 import brava.fightinwords.ui.typesetter.SortButton.Companion.clickSortButton
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class GameViewModel : ViewModel() {
@@ -23,8 +28,8 @@ class GameViewModel : ViewModel() {
     private val _gameScreenState = MutableStateFlow<GameScreenState>(GameScreenState.Loading)
     val gameScreenState: StateFlow<GameScreenState> = _gameScreenState.asStateFlow()
 
-    private val _submissionResults = MutableSharedFlow<Umpire.SubmissionResult>()
-    val submissionResults: SharedFlow<Umpire.SubmissionResult> = _submissionResults.asSharedFlow()
+    private val _submissionResults = MutableSharedFlow<SubmissionResult>()
+    val submissionResults: SharedFlow<SubmissionResult> = _submissionResults.asSharedFlow()
 
     fun clickLetterButton(index: Int) {
         gameInProgress.typesetter.toggleIndex(index)
@@ -41,7 +46,7 @@ class GameViewModel : ViewModel() {
         refresh()
     }
 
-    fun clickSubmitButton(): Umpire.SubmissionResult {
+    fun clickSubmitButton(): SubmissionResult {
         val result = gameInProgress.submitGalley()
         emitSubmissionResult(result)
         refresh()
@@ -56,11 +61,9 @@ class GameViewModel : ViewModel() {
         refresh()
     }
 
-    fun focusOnWord(wordState: WordState) {
-        if (wordState is DefinedWordState) {
-            gameInProgress.ledgerman.focusOnWord(wordState)
-            refresh()
-        }
+    fun focusOnWord(wordKey: WordKey) {
+        gameInProgress.ledgerman.focusOnWord(wordKey)
+        refresh()
     }
 
     fun expandFocusedWord() {
@@ -95,9 +98,9 @@ class GameViewModel : ViewModel() {
 
     fun getSerializableState() = gameInProgress.getSerializableState()
 
-    private fun emitSubmissionResult(submissionResult: Umpire.SubmissionResult) {
+    private fun emitSubmissionResult(submissionResponse: SubmissionResult) {
         viewModelScope.launch {
-            _submissionResults.emit(submissionResult)
+            _submissionResults.emit(submissionResponse)
         }
     }
 }

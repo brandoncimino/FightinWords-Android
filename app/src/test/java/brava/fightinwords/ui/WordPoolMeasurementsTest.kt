@@ -2,7 +2,6 @@ package brava.fightinwords.ui
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import brava.fightinwords.gameplay.Unplayed
 import brava.fightinwords.gameplay.wordlookup.WordDefinition
 import brava.fightinwords.ui.submissions.WordPoolMeasurements
 import brava.fightinwords.ui.submissions.defaultWordPadding
@@ -412,7 +411,6 @@ class WordPoolMeasurementsTest {
     """
 
     val saigasWords = Json.decodeFromString<List<WordDefinition>>(saigasJson)
-        .map { Unplayed(it) }
         .toList();
 
     @Test

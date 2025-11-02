@@ -3,8 +3,8 @@
 package brava.fightinwords.botlin.serialization
 
 import androidx.collection.longLongMapOf
+import brava.fightinwords.Besting.assertRoundTrip
 import brava.fightinwords.Nicknamed.Companion.nicknamed
-import brava.fightinwords.gameplay.experiments.assertRoundTrip
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.encodeToByteArray

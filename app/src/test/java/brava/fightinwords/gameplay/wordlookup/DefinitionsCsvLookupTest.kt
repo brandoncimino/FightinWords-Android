@@ -41,7 +41,7 @@ class DefinitionsCsvLookupTest {
                 WordDefinition(
                     word,
                     KnownLanguage.English,
-                    "Noun",
+                    KnownPartOfSpeech.Noun,
                     "plural of aabomycin",
                     WordSource.DefinitionsCsv
                 )

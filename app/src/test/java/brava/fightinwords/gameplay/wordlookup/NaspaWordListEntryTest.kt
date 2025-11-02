@@ -1,6 +1,7 @@
 package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.botlin.TinyRange
+import brava.fightinwords.botlin.asciiBytes
 import brava.fightinwords.botlin.toUtf8String
 import brava.fightinwords.botlin.utf8
 import brava.fightinwords.botlin.utf8Bytes
@@ -90,9 +91,12 @@ class NaspaWordListEntryTest {
             return TinyRange.startLength(index, substring.length)
         }
 
-        val NaspaWordListEntry.wordString get() = rawEntry.toUtf8String(wordRange)
-        val NaspaWordListEntry.partOfSpeechString get() = rawEntry.toUtf8String(partOfSpeechRange)
-        val NaspaWordListEntry.definitionString get() = rawEntry.toUtf8String(definitionRange)
+        val NaspaWordListEntry.wordString get() = rawEntry.bytes.toUtf8String(wordRange)
+        val NaspaWordListEntry.partOfSpeechString
+            get() = rawEntry.bytes.toUtf8String(
+                partOfSpeechRange
+            )
+        val NaspaWordListEntry.definitionString get() = rawEntry.bytes.toUtf8String(definitionRange)
     }
 
     @Test
@@ -150,7 +154,7 @@ class NaspaWordListEntryTest {
     }
 
     fun parseTest(data: Data) {
-        val parsed = NaspaWordListEntry.parse(data.rawString.utf8Bytes())
+        val parsed = NaspaWordListEntry.parse(data.rawString.asciiBytes())
 
         println("parsed.wordRange = ${parsed.wordRange}")
         println("data.wordRange = ${data.wordRange}")

@@ -14,7 +14,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import brava.fightinwords.gameplay.WordState
+import brava.fightinwords.gameplay.data.Word
+import brava.fightinwords.gameplay.scoring.ScoreboardWord
 import brava.fightinwords.ui.PaddingRatio
 import brava.fightinwords.ui.PreviewHelpers
 import brava.fightinwords.ui.theme.Pink80
@@ -23,12 +24,12 @@ import com.google.common.collect.Lists
 
 @Composable
 fun ScrollableWordPool(
-    visibleWords: List<WordState>,
+    visibleWords: List<ScoreboardWord>,
     modifier: Modifier = Modifier,
     maxLetterPersonalSpace: Dp = LetterTile.Big,
     minLetterPersonalSpace: Dp = LetterTile.Small,
     wordPadding: PaddingRatio = defaultWordPadding,
-    onWordClick: (WordState) -> Unit = {},
+    onWordClick: (Word) -> Unit = {},
 ) {
     BoxWithConstraints(modifier) {
         val availableSpace = DpSize(this.maxWidth, this.maxHeight)

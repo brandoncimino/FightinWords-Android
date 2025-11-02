@@ -1,17 +1,12 @@
 package brava.fightinwords.gameplay.data
 
+import brava.fightinwords.botlin.AsciiBytes
 import brava.fightinwords.botlin.ByteSlice
-import brava.fightinwords.botlin.lastIndex
-import brava.fightinwords.gameplay.data.TinyWord.Companion.packAZ
+import brava.fightinwords.botlin.debugAssert
+import brava.fightinwords.gameplay.data.TinyWord.Companion.MAX_PACK
+import brava.fightinwords.gameplay.data.TinyWord.Companion.create
 import brava.fightinwords.gameplay.data.Word.Companion.indices
 import org.jetbrains.annotations.ApiStatus
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
 
 /**
  * > # TL;DR:
@@ -52,6 +47,10 @@ value class TinyWord(val packed: Long) : Word {
         }
     }
 
+    override fun toString(): String {
+        return unpackAZ(packed) // TODO: the `unpackAZ` method isn't really necessary
+    }
+
     companion object {
         const val MAX_PACK = 12
 
@@ -62,52 +61,37 @@ value class TinyWord(val packed: Long) : Word {
         val empty inline get() = TinyWord(emptyPacked)
 
         fun of(
+            asciiBytes: AsciiBytes,
+            start: Int = 0,
+            endInclusive: Int = asciiBytes.lastIndex,
+        ) = of(asciiBytes.bytes, start, endInclusive)
+
+        fun of(
             bytes: ByteSlice,
             start: Int = 0,
             endInclusive: Int = bytes.lastIndex,
-        ) = TinyWord(
-            packAZ(bytes::get, start, endInclusive)
+        ) = create(
+            { TinyLetter.create(bytes[it]) },
+            start,
+            endInclusive
         )
-
-        fun of(
-            byteBuffer: ByteBuffer,
-            start: Int = 0,
-            endInclusive: Int = byteBuffer.lastIndex,
-        ) = TinyWord(
-            packAZ(byteBuffer::get, start, endInclusive)
-        )
-
-        fun of(tinyLetters: Iterable<TinyLetter>): TinyWord {
-            return when (tinyLetters) {
-                is Collection<TinyLetter> -> fromCollection(tinyLetters)
-                else -> {
-                    var length = 0
-                    var hash = 0L
-                    for (l in tinyLetters) {
-                        length += 1
-                        length.requireLength()
-                        hash = hash.packLetter(l.byteValue)
-                    }
-                    hash = hash.packLength(length)
-                    return TinyWord(hash)
-                }
-            }
-        }
-
-        fun of(charSequence: CharSequence): TinyWord {
-            return TinyWord(packAZ(charSequence));
-        }
 
         fun CharSequence.asTinyWord(): TinyWord? {
-            val packed = tryPackAz(this)
-            if (packed < 0) {
-                return TinyWord.empty
-            }
-
-            return TinyWord(packed)
+            return tryCreate(
+                { this[it].code },
+                0,
+                lastIndex
+            )
         }
 
-        fun CharSequence.toTinyWord() = of(this)
+        fun CharSequence.toTinyWord(
+            start: Int = 0,
+            endInclusive: Int = lastIndex,
+        ) = create(
+            { TinyLetter.create(get(it)) },
+            start,
+            endInclusive
+        )
 
         enum class LongWordHandling {
             Error,
@@ -129,7 +113,8 @@ value class TinyWord(val packed: Long) : Word {
                 if (current == wordDelimiter) {
                     break
                 } else {
-                    hash = hash.packLetter(current)
+                    val tinyLetter = TinyLetter.create(current)
+                    hash = hash.packLowerAz(tinyLetter.byteValue)
                     pos += 1
                     if (pos - start >= MAX_PACK) {
                         when (longWordHandling) {
@@ -169,83 +154,71 @@ value class TinyWord(val packed: Long) : Word {
             )
         }
 
-        private fun fromCollection(letters: Collection<TinyLetter>): TinyWord {
-            letters.size.requireLength()
-
-            var hash = 0L
-            for (l in letters) {
-                hash = hash.packLetter(l.byteValue)
-            }
-
-            hash = hash.packLength(letters.size)
-            return TinyWord(hash)
+        @PublishedApi
+        internal fun Long.packLowerAz(lowerAz: Byte): Long {
+            debugAssert { lowerAz.toInt().toChar() in 'a'..'z' }
+            // TODO: Why is this (which was previously called `packLong`) using `shl 5`, but `packLength` is using `shl 4`...?
+            return (this shl 5) or (lowerAz - aByte).toLong()
         }
 
-        internal fun packAZ(s: CharSequence): Long {
-            s.length.requireLength()
-            var hash = 0L
-            for (c in s) {
-                hash = hash.packLetter(c)
-            }
-            return hash.packLength(s.length) // put length in last 4 bits
+        @PublishedApi
+        internal fun Long.packLength(length: Int): Long {
+            debugAssert { length <= MAX_PACK }
+            return (this shl 4) or length.toLong()
         }
 
-        /**
-         * Similar to [packAZ], but returns `-1` if [s] can't be turned into a [brava.fightinwords.gameplay.data.TinyWord] (either because it is too long, or it has non-[TinyLetter]s)
-         */
-        internal fun tryPackAz(s: CharSequence): Long {
-            if (s.length > MAX_PACK) {
-                return -1
-            }
-
-            var hash = 0L
-            for (c in s) {
-                val lowerAz = c.asLowerAz()
-                if (lowerAz < 0) {
-                    return -1
-                }
-                hash = hash.packLowerAz(lowerAz)
-            }
-            return hash.packLength(s.length)
-        }
-
-        private fun Long.packLong(long: Long) = (this shl 5) or long
-
-        private fun Long.packLowerAz(lowerAz: Byte) : Long = packLong((lowerAz - aByte).toLong())
-        private fun Long.packLetter(letter: Char): Long = packLowerAz(letter.toLowerAz())
-        private fun Long.packLetter(letter: Byte): Long = packLowerAz(letter.toLowerAz())
-        internal fun Long.packLength(length: Int): Long = (this shl 4) or length.toLong()
-
-        private inline fun packAZ(
-            getter: (Int) -> Byte,
+        inline fun create(
+            getter: (Int) -> TinyLetter,
             start: Int,
             endInclusive: Int,
-        ): Long {
+        ): TinyWord {
             val length = (endInclusive - start + 1).requireLength()
             var hash = 0L
             for (i in start..endInclusive) {
-                val c = getter(i)
-                hash = hash.packLetter(c)
+                val tinyLetter = getter(i)
+                hash = hash.packLowerAz(tinyLetter.byteValue)
             }
 
-            return hash.packLength(length)
+            return TinyWord(hash.packLength(length))
         }
 
-        private fun packAZ(utf8Bytes: ByteBuffer): Long {
+        /**
+         * Similar to [create], but returns `null` if we couldn't create a [TinyWord] for some reason, e.g.:
+         * - The length would exceeded [MAX_PACK]
+         * - The range contained non-[TinyLetter]s
+         */
+        inline fun tryCreate(
+            getCodePointAtIndex: (index: Int) -> Int,
+            start: Int,
+            endInclusive: Int,
+        ): TinyWord? {
+            val length = (endInclusive - start + 1)
+            if (length !in 0..MAX_PACK) {
+                return null
+            }
+
             var hash = 0L
-            var length = 0
-            while (utf8Bytes.hasRemaining()) {
-                val c = utf8Bytes.get()
-                hash = hash.packLetter(c)
-                length += 1
-                length.requireLength()
+
+            for (i in start..endInclusive) {
+                val codePoint = getCodePointAtIndex(i)
+                val asLowerAz = codePoint.asLowerAz()
+
+                if (asLowerAz < 0) {
+                    return null
+                }
+
+                hash = hash.packLowerAz(asLowerAz)
             }
 
-            return hash.packLength(length)
+            hash = hash.packLength(length)
+            return TinyWord(hash)
         }
 
-        private fun Int.requireLength(): Int {
-            require(this in 1..MAX_PACK, { "Must be 1–$MAX_PACK characters of a–z" })
+        @PublishedApi
+        internal fun Int.requireLength(): Int {
+            require(this in 0..MAX_PACK) {
+                "The length $this is outside of the range ${0..MAX_PACK}"
+            }
             return this
         }
 
@@ -253,7 +226,7 @@ value class TinyWord(val packed: Long) : Word {
 
         internal fun unpackAZ(hash: Long): String {
             val length = (hash and 0b1111).toInt() // last 4 bits = length
-            require(length in 1..MAX_PACK)
+            length.requireLength()
 
             var bits = hash shr 4
             val chars = CharArray(length)
@@ -265,47 +238,6 @@ value class TinyWord(val packed: Long) : Word {
             }
 
             return String(chars)
-        }
-
-        internal fun writePackedWordFile(words: Sequence<String>, path: String) {
-            DataOutputStream(BufferedOutputStream(FileOutputStream(path))).use { out ->
-                for (word in words) {
-                    val packed = packAZ(word)
-                    out.writeLong(packed)
-                }
-            }
-        }
-
-        internal fun <T> readPackedWordFile(path: String, action: (Sequence<String>) -> T): T {
-            DataInputStream(BufferedInputStream(FileInputStream(path))).use { input ->
-                val words = iterator {
-                    while (input.available() >= 8) { // 8 bytes = 64 bits
-                        val packed = input.readLong()
-                        val word = unpackAZ(packed)
-                        yield(word)
-                    }
-                }
-
-                return action(words.asSequence())
-            }
-        }
-
-        internal fun Iterable<Letter>.tryGetTinyLetters(): TinyWord? {
-            var hash = 0L
-            var length = 0
-            for (letter in this) {
-                if (letter is TinyLetter) {
-                    hash = hash.packLowerAz(letter.byteValue)
-                    length += 1
-
-                    if (length > MAX_PACK) {
-                        return null
-                    }
-                }
-            }
-
-            hash = hash.packLength(length)
-            return TinyWord(hash)
         }
     }
 }

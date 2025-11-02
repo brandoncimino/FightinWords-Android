@@ -1,13 +1,11 @@
 package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.botlin.AsciiBytes
-import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.ListImplementation
 import brava.fightinwords.botlin.Substring.Companion.fastSlice
 import brava.fightinwords.botlin.TinyRange
 import brava.fightinwords.botlin.TinyRange.Companion.til
 import brava.fightinwords.botlin.indexOf
-import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.TinyWord.Companion.toTinyWord
 import brava.fightinwords.gameplay.wordlookup.AnnotatedDefinitionPart.Companion.appendInline
 import brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.Companion.linkEnd
@@ -125,35 +123,13 @@ data class NaspaWordListEntry internal constructor(
         }
 
         /**
-         * Extracts a [WordKey] from a "reference" in a [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definitionRange],
+         * Extracts a [WordKey] from a "reference" in a [NaspaWordListEntry.definitionRange],
          * e.g. `{bisexual=n}` in `BI a {bisexual=n} [n BIS]`.
          *
-         * @param definition The full [brava.fightinwords.gameplay.wordlookup.NaspaWordListEntry.definitionRange]
-         * @param wrapperStart The index in the [definition] that indicated the beginning of the word key, e.g. [linkStart] in `{bisexual=n}`.
-         * @param wrapperEndInclusive The index in the [definition] of the closing character, e.g. [linkEnd] in `{bisexual=n}`.
+         * @param definition The full [NaspaWordListEntry.definitionRange]
+         * @param startIndex The index in the [definition] that indicated the beginning of the word key, e.g. [linkStart] in `{bisexual=n}`.
+         * @param endInclusive The index in the [definition] of the closing character, e.g. [linkEnd] in `{bisexual=n}`.
          */
-        fun parseNaspaWordKey(
-            definition: ByteSlice,
-            wrapperStart: Int,
-            wrapperEndInclusive: Int,
-        ) : WordKey {
-            val delimiterIndex =
-                definition.indexOf(equals, wrapperStart + 1, wrapperEndInclusive - 1)
-
-            return WordKey(
-                TinyWord.of(
-                    definition,
-                    wrapperStart + 1,
-                    delimiterIndex - 1
-                ),
-                TinyWord.of(
-                    definition,
-                    delimiterIndex + 1,
-                    wrapperEndInclusive - 1
-                )
-            )
-        }
-
         fun parseNaspaWordKey(
             definition: CharSequence,
             startIndex: Int,
@@ -170,7 +146,7 @@ data class NaspaWordListEntry internal constructor(
                 definition.fastSlice(delimiterIndex + 1, definition.length - wordLength - 1)
             return WordKey(
                 wordSlice.toTinyWord(),
-                partOfSpeech.toTinyWord()
+                KnownPartOfSpeech.aliasMatcher.requireMatch(partOfSpeech)
             )
         }
     }

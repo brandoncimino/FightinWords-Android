@@ -19,8 +19,23 @@ internal fun Context.getCachedAssetBytes(assetName: String): ByteSlice {
     return getCachedAssetFile(assetName).getMemoryMappedBuffer().fastSlice()
 }
 
-internal fun Context.getCachedAssetFile(assetName: String): File {
-    val cacheFile = File(this.cacheDir, assetName)
+private fun Context.getCacheFile(
+    fileName: String,
+): File {
+    val cacheDir = try {
+        this.cacheDir
+    } catch (e: NullPointerException) {
+        throw IllegalStateException(
+            "A ${NullPointerException::class.simpleName} was thrown when we tried to access `${this::class.simpleName}.cacheDir`. I think that means you've called this method before the app has actually started - e.g. by a field initializer.",
+            e
+        )
+    }
+
+    return File(cacheDir, fileName)
+}
+
+private fun Context.getCachedAssetFile(assetName: String): File {
+    val cacheFile = getCacheFile(assetName)
 
     // Copy only if not already cached
     if (!cacheFile.exists()) {

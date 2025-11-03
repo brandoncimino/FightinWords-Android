@@ -1,5 +1,6 @@
 package brava.fightinwords.ui
 
+import android.util.Log
 import brava.fightinwords.botlin.blog
 import org.jetbrains.annotations.Contract
 
@@ -14,9 +15,11 @@ object JetpackBoosters {
         maxShrinks: Int = 10,
         maxGrows: Int = 10,
     ): I {
+        val logLevel = Log.VERBOSE
+
         // If the `minValue` doesn't fit, then we know we're going to use it anyways
         if (checkFit(minValue) == false) {
-            blog { "minValue $minValue doesn't fit; so that's what we're going to wind up with anyways" }
+            blog(level = logLevel) { "minValue $minValue doesn't fit; so that's what we're going to wind up with anyways" }
             return minValue
         }
 
@@ -25,16 +28,16 @@ object JetpackBoosters {
         while (checkFit(shrunk) == false) {
             shrinkCount += 1
             if (shrinkCount > maxShrinks) {
-                blog { "Still couldn't fit after maxShrinks of $maxShrinks with the value: $shrunk" }
+                blog(level = logLevel) { "Still couldn't fit after maxShrinks of $maxShrinks with the value: $shrunk" }
                 return shrunk
             }
             shrunk = bigShrinker(shrunk)
         }
 
-        blog { "Shrunk $maxValue down to: $shrunk; growing..." }
+        blog(level = logLevel) { "Shrunk $maxValue down to: $shrunk; growing..." }
 
         if (shrinkCount == 0) {
-            blog { "maxValue $maxValue already fits!" }
+            blog(level = logLevel) { "maxValue $maxValue already fits!" }
             return shrunk
         }
 
@@ -43,14 +46,14 @@ object JetpackBoosters {
         while (checkFit(grown)) {
             growCount += 1
             if (growCount > maxGrows) {
-                blog { "Still fit after maxGrows of $maxGrows with the value: $grown" }
+                blog(level = logLevel) { "Still fit after maxGrows of $maxGrows with the value: $grown" }
                 return grown
             }
             shrunk = grown
             grown = littleGrower(grown)
         }
 
-        blog { "Grown value $grown does NOT fit; returning previous value: $shrunk" }
+        blog(level = logLevel) { "Grown value $grown does NOT fit; returning previous value: $shrunk" }
 
         return shrunk
     }

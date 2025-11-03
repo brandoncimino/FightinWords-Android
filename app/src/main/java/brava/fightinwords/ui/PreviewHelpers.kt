@@ -29,7 +29,9 @@ import brava.fightinwords.gameplay.wordlookup.WordDefinition
 import brava.fightinwords.gameplay.wordlookup.WordKey
 import brava.fightinwords.gameplay.wordlookup.WordSource
 import brava.fightinwords.ui.typesetter.TypesetterState
+import org.jetbrains.annotations.TestOnly
 
+@TestOnly
 object PreviewHelpers {
     val deez = WordDefinition(
         "deez".toWord(),

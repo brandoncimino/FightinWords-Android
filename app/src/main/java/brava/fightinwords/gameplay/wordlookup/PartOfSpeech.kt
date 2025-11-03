@@ -2,6 +2,7 @@ package brava.fightinwords.gameplay.wordlookup
 
 import brava.fightinwords.botlin.AliasMatcher
 import brava.fightinwords.botlin.AliasMatcher.Companion.aliasMatcher
+import com.google.common.collect.ImmutableList
 
 sealed interface PartOfSpeech {
     companion object {
@@ -32,8 +33,8 @@ sealed interface PartOfSpeech {
  * From Wikipedia's [part of speech](https://en.wikipedia.org/wiki/Part_of_speech):
  * > Commonly listed English parts of speech are noun, verb, adjective, adverb, pronoun, preposition, conjunction, interjection, numeral, article, and determiner.
  */
-enum class KnownPartOfSpeech : PartOfSpeech {
-    Noun,
+enum class KnownPartOfSpeech(vararg aliases: String) : PartOfSpeech {
+    Noun("n" /* To avoid `n` mapping ambiguously with `Numeral` */),
     Verb,
     Adjective,
     Adverb,
@@ -71,8 +72,13 @@ enum class KnownPartOfSpeech : PartOfSpeech {
     Determiner,
     ;
 
+    private val aliases: ImmutableList<String> = ImmutableList.copyOf(aliases)
+
     companion object {
-        val aliasMatcher = entries.aliasMatcher(ignoreCase = true)
+        val aliasMatcher = entries.aliasMatcher(
+            ignoreCase = true,
+            aliases = { it.aliases }
+        )
     }
 
 }

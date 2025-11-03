@@ -143,7 +143,7 @@ sealed interface Word : Comparable<Word> {
                 val attemptedTiny = TinyWord.tryCreate(
                     { this[it].codePoint },
                     0,
-                    size
+                    lastIndex
                 )
 
                 if (attemptedTiny != null) {

@@ -74,34 +74,39 @@ internal object ListImplementation {
         return 0
     }
 
-    inline fun <T> containsAllElementsOf(
+    /**
+     * 📎 This could theoretically split [selfSize] and [otherSize] into `start` and `endInclusive` arguments like
+     * many other methods in here do, but it actually makes it considerably messier to invoke in scenarios where
+     * you don't have a nice [kotlin.collections.lastIndex] methods to take advantage of.
+     *
+     * You can always achieve the same behavior by adding an offset to the indices inside of the [equality] block.
+     */
+    inline fun containsAllElementsOf(
         selfSize: Int,
-        selfGetter: (Int) -> T,
         otherSize: Int,
-        otherGetter: (Int) -> T,
-        equality: (T, T) -> Boolean,
+        equality: (selfIndex: Int, otherIndex: Int) -> Boolean,
     ): Boolean {
+        if (otherSize <= 0) {
+            return true
+        }
+
         if (otherSize > selfSize) {
             return false
-        }
-        if (otherSize == 0) {
-            return true
         }
 
         var remaining = TinyFlags.first(selfSize)
 
-        for (i in 0 until otherSize) {
-            val candidate = otherGetter(i)
-
-            val matchIndex = indexOfFiltered(
-                selfSize,
-                selfGetter,
-                remaining::get,
-                candidate,
-                equality
+        for (otherIndex in 0 until otherSize) {
+            val matchIndex = indexOf(
+                0,
+                selfSize - 1,
+                { selfIndex ->
+                    equality(selfIndex, otherIndex)
+                },
+                remaining::get
             )
 
-            if (matchIndex == -1) {
+            if (matchIndex < 0) {
                 return false
             }
 
@@ -111,34 +116,17 @@ internal object ListImplementation {
         return true
     }
 
-    inline fun <T> indexOfFiltered(
-        size: Int,
-        getter: (Int) -> T,
-        indexFilter: (Int) -> Boolean,
-        target: T,
-        equality: (T, T) -> Boolean,
-    ): Int {
-        for (i in 0..size) {
-            if (indexFilter(i) == false) {
-                continue
-            }
-
-            val myElement = getter(i)
-
-            if (equality(myElement, target)) {
-                return i
-            }
-        }
-
-        return -1
-    }
-
     inline fun indexOf(
         start: Int,
         endInclusive: Int,
         indexPredicate: (Int) -> Boolean,
+        indexFilter: (Int) -> Boolean = { true },
     ): Int {
         for (i in start..endInclusive) {
+            if (indexFilter(i) == false) {
+                continue
+            }
+
             if (indexPredicate(i)) {
                 return i
             }
@@ -150,33 +138,14 @@ internal object ListImplementation {
      * In order, processes "wrapped" and "unwrapped" ranges of a _"`source`"_.
      * > 📎 This method has a "make-believe" _`source`_ parameter, which is not passed explicitly in order to avoid any boxing that might get caused by using generics.
      *
-     * - A _"wrapped range"_ is begins with [isWrapperStart] and ends with [isWrapperEndInclusive].
+     * - A _"wrapped range"_ begins where [isWrapperStart] is `true` and ends when [isWrapperEndInclusive] is `true`.
+     * - [isWrapperEndInclusive] depends on the corresponding [isWrapperStart] index.
      * - Anything that is _not_ in a _"wrapped range"_ is considered an _"unwrapped range"_.
      * - "Wrapped ranges" cannot be "nested", i.e.:
      *     - Encountering [isWrapperStart] while _inside_ of a "wrapped range" doesn't do anything.
      *     - Encountering [isWrapperEndInclusive] when _outside_ of a "wrapped range" doesn't do anything.
      *
-     * # Example - C#-style interpolated string, e.g. `"Hello {name}"`
-     * ```kotlin
-     *         ListImplementation.forEachWrappedRange(
-     *             sourceStart = 0,
-     *             sourceEndInclusive = inputString.lastIndex,
-     *             isWrapperStart = { inputString[it] == '{' },
-     *             isWrapperEndInclusive = { rangeStart, sourceIndex ->
-     *                 inputString[sourceIndex] == '}'
-     *             },
-     *             wrappedRangeAction = { start, endInclusive ->
-     *                 actualRanges.add(
-     *                     inputString.substring(start..endInclusive) to Wrapped
-     *                 )
-     *             },
-     *             unwrappedRangeAction = { start, endInclusive ->
-     *                 actualRanges.add(
-     *                     inputString.substring(start..endInclusive) to Unwrapped
-     *                 )
-     *             }
-     *         )
-     * ```
+     * @sample forEachWrappedRange_cSharpStyleInterpolatedString_sample
      *
      * @param sourceStart The [IntRange.first] index within the _"`source`"_ that should be processed.
      * @param sourceEndInclusive The [IntRange.last] index within the _"`source`"_ that should be processed.
@@ -282,4 +251,32 @@ internal object ListImplementation {
         }
     }
 
+}
+
+@Suppress("unused", "FunctionName")
+private fun forEachWrappedRange_cSharpStyleInterpolatedString_sample() {
+    val inputString = "Today is {dayOfWeek}"
+    val namedValues = mapOf("dayOfWeek" to "Monday")
+
+    val stringBuilder = StringBuilder()
+
+    ListImplementation.forEachWrappedRange(
+        sourceStart = 0,
+        sourceEndInclusive = inputString.lastIndex,
+        isWrapperStart = { inputString[it] == '{' },
+        isWrapperEndInclusive = { rangeStart, sourceIndex ->
+            inputString[sourceIndex] == '}'
+        },
+        wrappedRangeAction = { wrapperStart, wrapperEndInclusive ->
+            val nameStart = wrapperStart + 1
+            val name = inputString.substring(nameStart until wrapperEndInclusive)
+
+            stringBuilder.append(namedValues[name])
+        },
+        unwrappedRangeAction = { start, endInclusive ->
+            stringBuilder.append(inputString, start..endInclusive)
+        }
+    )
+
+    assert(stringBuilder.toString() == "Today is Monday")
 }

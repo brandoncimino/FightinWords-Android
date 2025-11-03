@@ -82,13 +82,9 @@ class NaspaWordList(
 
     override fun isWord(word: Word): Boolean {
         return when (word) {
-            is TinyWord -> isWord(word)
+            is TinyWord -> index.findWordIndex(word) >= 0
             else        -> false
         }
-    }
-
-    fun isWord(word: TinyWord): Boolean {
-        return index.findWordIndex(word) >= 0
     }
 
     fun entries(): Sequence<NaspaWordListEntry> {

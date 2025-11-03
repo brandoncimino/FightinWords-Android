@@ -127,23 +127,29 @@ data class NaspaWordListEntry internal constructor(
          * e.g. `{bisexual=n}` in `BI a {bisexual=n} [n BIS]`.
          *
          * @param definition The full [NaspaWordListEntry.definitionRange]
-         * @param startIndex The index in the [definition] that indicated the beginning of the word key, e.g. [linkStart] in `{bisexual=n}`.
-         * @param endInclusive The index in the [definition] of the closing character, e.g. [linkEnd] in `{bisexual=n}`.
+         * @param startDelimiterIndex The index in the [definition] that indicated the beginning of the word key, e.g. [linkStart] in `{bisexual=n}`.
+         * @param endDelimiterIndex The index in the [definition] of the closing character, e.g. [linkEnd] in `{bisexual=n}`.
          */
         fun parseNaspaWordKey(
             definition: CharSequence,
-            startIndex: Int,
-            endInclusive: Int,
+            startDelimiterIndex: Int,
+            endDelimiterIndex: Int,
         ): WordKey {
-            val delimiterIndex = ListImplementation.indexOf(
-                startIndex,
-                endInclusive,
+            val splitterIndex = ListImplementation.indexOf(
+                startDelimiterIndex,
+                endDelimiterIndex,
                 { definition[it] == '=' }
             )
-            val wordLength = delimiterIndex - startIndex
-            val wordSlice = definition.fastSlice(startIndex, wordLength)
+
+            val wordSlice = definition.fastSlice(
+                start = startDelimiterIndex + 1,
+                endInclusive = splitterIndex - 1
+            )
             val partOfSpeech =
-                definition.fastSlice(delimiterIndex + 1, definition.length - wordLength - 1)
+                definition.fastSlice(
+                    start = splitterIndex + 1,
+                    endInclusive = endDelimiterIndex - 1
+                )
             return WordKey(
                 wordSlice.toTinyWord(),
                 KnownPartOfSpeech.aliasMatcher.requireMatch(partOfSpeech)

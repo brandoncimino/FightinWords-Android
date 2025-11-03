@@ -177,9 +177,13 @@ internal fun Int.toLowerAz(): Byte = asLowerAz().rejectNotAz(this)
 value class CodePointLetter internal constructor(override val codePoint: Int) : Letter
 
 private fun describeCodePoint(codePoint: Int): String =
-    "U+${codePoint} `${Character.toString(codePoint)}` ${Character.getName(codePoint) ?: "unassigned"} (${
-        getCategory(codePoint)
-    })"
+    when (Character.isValidCodePoint(codePoint)) {
+        true  -> "U+${codePoint} `${Character.toString(codePoint)}` ${Character.getName(codePoint) ?: "unassigned"} (${
+            getCategory(codePoint)
+        })"
+
+        false -> "INVALID Unicode point: $codePoint"
+    }
 
 private fun getCategory(codePoint: Int): CharCategory =
     CharCategory.valueOf(Character.getType(codePoint))

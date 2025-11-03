@@ -19,8 +19,17 @@ internal fun Context.getCachedAssetBytes(assetName: String): ByteSlice {
     return getCachedAssetFile(assetName).getMemoryMappedBuffer().fastSlice()
 }
 
-private fun Context.getCacheFile(
-    fileName: String,
+private fun File.createParents(): Boolean {
+    if (parentFile?.mkdirs() == true) {
+        blog { "Created the parent directories of the path: $this" }
+        return true
+    }
+
+    return false
+}
+
+private fun Context.getCacheFilePath(
+    relativePathInCacheDir: String,
 ): File {
     val cacheDir = try {
         this.cacheDir
@@ -31,19 +40,24 @@ private fun Context.getCacheFile(
         )
     }
 
-    return File(cacheDir, fileName)
+    return File(cacheDir, relativePathInCacheDir)
 }
 
 private fun Context.getCachedAssetFile(assetName: String): File {
-    val cacheFile = getCacheFile(assetName)
+    val cacheFile = getCacheFilePath(assetName)
 
     // Copy only if not already cached
     if (!cacheFile.exists()) {
+        blog { "Caching the asset `$assetName` into a NEW file: $cacheFile" }
+        // 📎 Neither `File.outputStream()` nor `File.createNewFile()` will create the necessary parent directories!
+        cacheFile.createParents()
         this.assets.open(assetName).use { input ->
             cacheFile.outputStream().use { output ->
                 input.copyTo(output)
             }
         }
+    } else {
+        blog { "The asset `$assetName` already has a cache file: $cacheFile" }
     }
 
     return cacheFile

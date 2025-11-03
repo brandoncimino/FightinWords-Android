@@ -35,7 +35,8 @@ class Factotum(
     }
 
     fun findWord(word: Word): FoundWord? {
-        return coreWordList.findWord(word) ?: bonusWordLookups.firstNotNullOf { it.findWord(word) }
+        return coreWordList.findWord(word)
+               ?: bonusWordLookups.firstNotNullOfOrNull { it.findWord(word) }
     }
 
     override fun findDefinition(word: Word): WordDefinition? {

@@ -1,7 +1,9 @@
 package brava.fightinwords.gameplay.data
 
+import android.util.Log
 import brava.fightinwords.botlin.AsciiBytes
 import brava.fightinwords.botlin.ByteSlice
+import brava.fightinwords.botlin.blog
 import brava.fightinwords.botlin.debugAssert
 import brava.fightinwords.gameplay.data.TinyWord.Companion.MAX_PACK
 import brava.fightinwords.gameplay.data.TinyWord.Companion.create
@@ -98,12 +100,15 @@ value class TinyWord(val packed: Long) : Word {
             Skip
         }
 
-        internal inline fun extractTinyWordFromRange(
+        /**
+         * TODO: This method is gnarly, and intimately coupled with [brava.fightinwords.gameplay.wordlookup.WordListIndex.processLines].
+         */
+        internal inline fun extractTinyWordFromStart(
             wordDelimiter: Byte,
             start: Int,
             endInclusive: Int,
             getter: (index: Int) -> Byte,
-            longWordHandling: LongWordHandling = LongWordHandling.Error,
+            longWordHandling: LongWordHandling,
         ): TinyWord {
             var hash = 0L
             var pos = start
@@ -114,9 +119,10 @@ value class TinyWord(val packed: Long) : Word {
                     break
                 } else {
                     val tinyLetter = TinyLetter.create(current)
-                    hash = hash.packLowerAz(tinyLetter.byteValue)
                     pos += 1
-                    if (pos - start >= MAX_PACK) {
+                    val wordLength = pos - start
+
+                    if (wordLength > MAX_PACK) {
                         when (longWordHandling) {
                             LongWordHandling.Error -> throw rejectLongWord(
                                 pos,
@@ -126,11 +132,13 @@ value class TinyWord(val packed: Long) : Word {
                             )
 
                             LongWordHandling.Skip  -> {
-                                println("SKIPPING a word that's TOO LONG: pos $pos - start $start = ${pos - start}")
+                                blog(level = Log.DEBUG) { "SKIPPING a word that's TOO LONG: pos $pos - start $start = ${pos - start}" }
                                 return empty
                             }
                         }
                     }
+
+                    hash = hash.packLowerAz(tinyLetter.byteValue)
                 }
             }
 

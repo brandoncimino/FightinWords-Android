@@ -158,3 +158,16 @@ fun String.asciiBytes(
     start: Int = 0,
     endInclusive: Int = lastIndex,
 ): AsciiBytes = utf8Bytes(start, endInclusive).toAscii()
+
+fun ByteSlice.skipUtf8ByteOrderMark(): ByteSlice {
+    if (
+        this[0] == 0xEF.toByte() &&
+        this[1] == 0xBB.toByte() &&
+        this[2] == 0xBF.toByte()
+    ) {
+        blog { "Skipping the first 3 bytes, 'cus they're the stupid bom thingy" }
+        return this.slice(3, lastIndex)
+    }
+
+    return this
+}

@@ -9,7 +9,13 @@ import kotlin.reflect.KProperty
 
 inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String? = javaClass.simpleName, message: () -> Any?) {
     if (Log.isLoggable(tag, level)) {
-        Log.println(level, tag, message().toString())
+        Log.println(
+            level, tag, runCatching(message)
+            .map { it.toString() }
+            .getOrElse {
+                "❌ $it"
+            }
+        )
     }
 }
 

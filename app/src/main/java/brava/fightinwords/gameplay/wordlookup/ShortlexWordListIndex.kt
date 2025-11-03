@@ -6,7 +6,9 @@ import androidx.collection.mutableIntIntMapOf
 import androidx.collection.mutableLongListOf
 import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.TinyRange
+import brava.fightinwords.botlin.blog
 import brava.fightinwords.botlin.forEachLineRange
+import brava.fightinwords.botlin.toUtf8String
 import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word.Companion.shortlexCompareTo
 import kotlinx.serialization.Transient
@@ -16,7 +18,7 @@ import kotlin.math.min
 /**
  * Contains information computed from the whole of a word list like [NaspaWordList].
  */
-class ShortlexWordListIndex private constructor(
+open class WordListIndex(
     /**
      * The ranges within a source like [NaspaWordList.bytes] that contain each word list entry.
      */
@@ -53,17 +55,24 @@ class ShortlexWordListIndex private constructor(
         }
     }
 
+    enum class LoopAction {
+        Skip,
+        Break,
+        Error
+    }
+
     companion object {
         fun build(
             bytes: ByteSlice,
+            stopOnEmptyWord: Boolean,
             wordExtractor: (lineStart: Int, lineEndInclusive: Int) -> TinyWord,
-        ): ShortlexWordListIndex {
+        ): WordListIndex {
             val wordLengthCounts = mutableIntIntMapOf()
 
             val entryWords = mutableLongListOf()
             val entryRanges = mutableLongListOf()
 
-            processLines(
+            val isShortlex = processLines(
                 bytes,
                 wordExtractor,
                 { word, range ->
@@ -73,45 +82,64 @@ class ShortlexWordListIndex private constructor(
                     wordLengthCounts[word.length] =
                         wordLengthCounts.getOrDefault(word.length, 0) + 1
                 },
-                stopOnEmptyWord = true
+                stopOnEmptyWord = stopOnEmptyWord
             )
 
-            return ShortlexWordListIndex(
-                entryWords,
-                entryRanges,
-                wordLengthCounts
-            )
+            return when (isShortlex) {
+                true  -> ShortlexWordListIndex(
+                    entryWords,
+                    entryRanges,
+                    wordLengthCounts
+                )
+
+                false -> WordListIndex(entryWords, entryRanges, wordLengthCounts)
+            }
         }
 
         inline fun processLines(
-            bytes: ByteSlice,
+            entireWordList: ByteSlice,
             wordExtractor: (Int, Int) -> TinyWord,
             forEachRange: (TinyWord, TinyRange) -> Unit,
             stopOnEmptyWord: Boolean,
-        ) {
+        ): Boolean {
+            var isShortlex = true
             var previousWord = TinyWord.empty
-            bytes.forEachLineRange { start, endInclusive, lineIndex ->
-                if (endInclusive < start) {
+            entireWordList.forEachLineRange { lineStart, lineEndInclusive, lineIndex ->
+                if (lineEndInclusive < lineStart) {
                     return@forEachLineRange
                 }
 
-                val word = wordExtractor(start, endInclusive)
+                val word = runCatching { wordExtractor(lineStart, lineEndInclusive) }
+                    .getOrElse {
+                        val lineBytes = entireWordList.slice(lineStart, lineEndInclusive)
+                        throw IllegalStateException(
+                            """
+                            Failed to extract a ${TinyWord::class.simpleName} from the start of the following range:
+                                line range: ${lineBytes.rangeInSource}
+                                line bytes: ${lineBytes.indices.map { lineBytes[it] }}
+                                line utf8: ${lineBytes.toUtf8String()}
+                            """, it
+                        )
+                    }
 
                 if (word.isEmpty()) {
                     when (stopOnEmptyWord) {
-                        true  -> return@processLines
+                        true -> return@processLines isShortlex
                         false -> return@forEachLineRange
                     }
                 }
 
                 // Make sure that we do actually have a shortlex word list
-                if (word.shortlexCompareTo(previousWord) < 0) {
-                    throw IllegalStateException("The word `$word` on line ${lineIndex + 1} comes before the previous word `$previousWord` in shortlex order, which means that our input is NOT in shortlex order!")
+                if (isShortlex && word.shortlexCompareTo(previousWord) < 0) {
+                    blog { "The word `$word` on line ${lineIndex + 1} comes before the previous word `$previousWord` in shortlex order, which means that our input is NOT in shortlex order!" }
+                    isShortlex = false
                 }
                 previousWord = word
 
-                forEachRange(word, TinyRange.startEndInclusive(start, endInclusive))
+                forEachRange(word, TinyRange.startEndInclusive(lineStart, lineEndInclusive))
             }
+
+            return isShortlex
         }
     }
 
@@ -119,6 +147,16 @@ class ShortlexWordListIndex private constructor(
         return "${this::class}: wordLengthCounts = $wordLengthCounts"
     }
 }
+
+class ShortlexWordListIndex(
+    entryWords: LongList,
+    entryRanges: LongList,
+    wordLengthCounts: IntIntMap,
+) : WordListIndex(
+    entryWords = entryWords,
+    entryRanges = entryRanges,
+    wordLengthCounts = wordLengthCounts
+)
 
 private fun IntIntMap.keyRange(): IntRange {
     var min = Int.MAX_VALUE

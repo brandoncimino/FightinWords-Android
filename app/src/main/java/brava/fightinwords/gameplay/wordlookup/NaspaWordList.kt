@@ -41,7 +41,7 @@ class NaspaWordList(
     override val id: WordList.Id get() = WordSource.NaspaWordList2023
 
     override fun getCountOfWordsWithLength(wordLength: Int): Int =
-        index.wordLengthCounts[wordLength]
+        index.wordLengthCounts.getOrDefault(wordLength, 0)
 
     override val wordLengthRange: IntRange get() = index.wordLengthRange
 
@@ -118,13 +118,13 @@ class NaspaWordList(
 private fun parseWordLineRanges(
     bytes: AsciiBytes,
 ): ShortlexWordListIndex {
-    return ShortlexWordListIndex.build(bytes.bytes) { lineStart, lineEndInclusive ->
-        TinyWord.extractTinyWordFromRange(
+    return WordListIndex.build(bytes.bytes, stopOnEmptyWord = true) { lineStart, lineEndInclusive ->
+        TinyWord.extractTinyWordFromStart(
             ' '.code.toByte(),
             lineStart,
             lineEndInclusive,
             bytes::getByte,
             TinyWord.Companion.LongWordHandling.Skip
         )
-    }
+    } as ShortlexWordListIndex
 }

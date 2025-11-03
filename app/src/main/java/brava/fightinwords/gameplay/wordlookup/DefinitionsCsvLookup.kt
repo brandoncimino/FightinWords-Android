@@ -3,6 +3,7 @@ package brava.fightinwords.gameplay.wordlookup
 import brava.fightinwords.botlin.ByteSlice
 import brava.fightinwords.botlin.TinyRange.Companion.isEmpty
 import brava.fightinwords.botlin.sequenceOfNotNull
+import brava.fightinwords.botlin.skipUtf8ByteOrderMark
 import brava.fightinwords.botlin.utf8
 import brava.fightinwords.gameplay.KnownLanguage
 import brava.fightinwords.gameplay.data.TinyWord
@@ -12,16 +13,19 @@ import java.nio.CharBuffer
 
 fun DefinitionsCsvLookup(
     bytes: ByteSlice,
-) = DefinitionsCsvLookup(
-    DefinitionsCsvLookup.parseWordLineRanges(bytes),
-    bytes
-)
+): DefinitionsCsvLookup {
+    val cleanBytes = bytes.skipUtf8ByteOrderMark()
+    return DefinitionsCsvLookup(
+        DefinitionsCsvLookup.parseWordLineRanges(cleanBytes),
+        cleanBytes
+    )
+}
 
 class DefinitionsCsvLookup(
-    val index: ShortlexWordListIndex,
+    val index: WordListIndex,
     private val bytes: ByteSlice,
     private val language: KnownLanguage = KnownLanguage.English,
-) : DefinitionLookup, ShortlexWordList {
+) : DefinitionLookup, WordList {
     override val id: WordList.Id
         get() = WordSource.DefinitionsCsv
 
@@ -72,12 +76,13 @@ class DefinitionsCsvLookup(
         private val commaByte: Byte = ','.code.toByte()
         internal fun parseWordLineRanges(
             bytes: ByteSlice,
-        ) = ShortlexWordListIndex.build(bytes) { lineStart, lineEndInclusive ->
-            TinyWord.extractTinyWordFromRange(
+        ) = WordListIndex.build(bytes, stopOnEmptyWord = false) { lineStart, lineEndInclusive ->
+            TinyWord.extractTinyWordFromStart(
                 commaByte,
                 lineStart,
                 lineEndInclusive,
-                bytes::get
+                bytes::get,
+                TinyWord.Companion.LongWordHandling.Skip,
             )
         }
 

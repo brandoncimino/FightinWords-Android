@@ -26,11 +26,10 @@ class LetterPool(
 
         return ListImplementation.containsAllElementsOf(
             codePoints.length(),
-            codePoints::get,
-            word.length,
-            word::get,
-            { a, b -> a == b }
-        )
+            word.length
+        ) { poolIndex, wordIndex ->
+            codePoints[poolIndex] == word[wordIndex].codePoint
+        }
     }
 
     companion object {

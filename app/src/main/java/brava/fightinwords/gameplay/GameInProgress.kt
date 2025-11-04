@@ -1,6 +1,7 @@
 package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
+import brava.fightinwords.gameplay.GamePlan.Companion.wordLengthRange
 import brava.fightinwords.gameplay.Typesetter.Companion.getSerializableState
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.WordPool
@@ -26,9 +27,6 @@ class GameInProgress(
     inline val arbiter inline get() = ledgerman.arbiter
 
     companion object {
-        inline val GamePlan.wordLengthRange
-            inline get() = minimumWordLength..letterPool.length
-
         fun startGame(
             wordSourceLoader: WordSourceLoader,
             gamePlan: GamePlan,
@@ -36,11 +34,10 @@ class GameInProgress(
         ): GameInProgress {
             val coreWordList = wordSourceLoader.getWordList(gamePlan.coreWordList)
             val coreWordPool = WordPool(
-                LetterPool(gamePlan.letterPool),
-                coreWordList,
-                gamePlan.minimumWordLength
+                letterPool = LetterPool(gamePlan.letterPool),
+                wordList = coreWordList,
+                wordLengthRange = gamePlan.wordLengthRange
             )
-
 
             val factotum = wordSourceLoader.getFactotum(gamePlan)
             val sharedResources = EmployeeFactory.SharedResources(wordSourceLoader, gamePlan)

@@ -2,6 +2,7 @@ package brava.fightinwords.gameplay.hr
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.GamePlan
+import brava.fightinwords.gameplay.GamePlan.Companion.wordLengthRange
 import brava.fightinwords.gameplay.data.LetterPool
 import brava.fightinwords.gameplay.data.WordPool
 import brava.fightinwords.gameplay.wordlookup.Factotum
@@ -38,7 +39,7 @@ interface EmployeeFactory<
         val coreWordPool: WordPool = WordPool(
             letterPool,
             factotum.coreWordList,
-            gamePlan.minimumWordLength
+            gamePlan.wordLengthRange
         )
     }
 }

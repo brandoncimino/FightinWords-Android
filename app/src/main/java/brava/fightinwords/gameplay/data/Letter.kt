@@ -2,6 +2,8 @@ package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.botlin.debugAssert
 import kotlinx.serialization.Serializable
+import kotlin.random.Random
+import kotlin.random.nextInt
 
 /**
  * A single glyph that we use for gameplay.
@@ -124,6 +126,9 @@ value class TinyLetter private constructor(
         fun create(azCaseInsensitive: Int) = TinyLetter(azCaseInsensitive.asLowerAz().rejectNotAz(azCaseInsensitive))
 
         fun create(azCaseInsensitive: Char) = TinyLetter(azCaseInsensitive.asLowerAz().rejectNotAz(azCaseInsensitive))
+
+        fun random(random: Random = Random) =
+            TinyLetter(random.nextInt('a'.code..'z'.code).toByte())
     }
 }
 

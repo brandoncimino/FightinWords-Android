@@ -9,6 +9,7 @@ import brava.fightinwords.botlin.LineupLocation.End
 import brava.fightinwords.botlin.LineupLocation.Inner
 import brava.fightinwords.botlin.LineupLocation.Start
 import brava.fightinwords.botlin.RepeatingChar.Companion.repeated
+import kotlin.math.max
 
 enum class LineupLocation {
     Start,
@@ -239,16 +240,25 @@ class Tabler {
             rowInfos: List<RowInfo>,
             gridLines: BoxDrawingCharacters?,
         ): APPENDABLE {
-            val colWidths = rowInfos[0].cells.indices.map { colIndex ->
-                rowInfos.maxOf { it.cells[colIndex].width }
+            if (rowInfos.isEmpty()) {
+                return this
+            }
+
+            val maxCellsPerRow = rowInfos.maxOf { it.cells.size }
+
+            val colWidths = (0 until maxCellsPerRow).map { colIndex ->
+                rowInfos.maxOf { it.cells.getOrNull(colIndex)?.width ?: 0 }
             }
 
             fun RowInfo.getLineSegments(lineIndex: Int): Sequence<CharSequence> {
-                return cells.asSequence()
-                    .mapIndexed { colIndex, cell ->
-                        cell.lines
-                            .getOrElse(lineIndex) { "" }
-                            .padEnd(colWidths[colIndex])
+                return (0 until max(cells.size, maxCellsPerRow))
+                    .asSequence()
+                    .map { colIndex ->
+                        val unpadded = cells.getOrNull(colIndex)
+                                           ?.lines
+                                           ?.getOrNull(lineIndex)
+                                       ?: ""
+                        unpadded.padEnd(colWidths[colIndex])
                     }
             }
 
@@ -299,7 +309,6 @@ class Tabler {
                         )
                     },
                     suffix = {
-
                         gridLines?.appendRowSeparatorTo(
                             this,
                             End,
@@ -359,6 +368,27 @@ class Tabler {
             )
         }
 
+        fun <CELL> Iterable<Iterable<CELL>>.formatTable(
+            gridLines: BoxDrawingCharacters? = BoxDrawingCharacters.Rounded,
+        ): String {
+            val rowInfos = this.mapIndexed { rowIndex, row ->
+                val cellInfos = row.mapIndexed { colIndex, cell ->
+                    CellInfo(
+                        cell.toString().lines(),
+                        rowIndex,
+                        colIndex
+                    )
+                }
+                RowInfo(cellInfos)
+            }
+
+            return buildString {
+                appendTableRows(
+                    rowInfos,
+                    gridLines
+                )
+            }
+        }
 
         fun <ROW, CELL> Iterable<ROW>.formatTable(
             vararg cols: (ROW) -> CELL,
@@ -377,10 +407,13 @@ class Tabler {
             }
         }
 
-        fun <K, V> Map<K, V>.formatTable(): String {
+        fun <K, V> Map<K, V>.formatTable(
+            gridLines: BoxDrawingCharacters? = BoxDrawingCharacters.Rounded,
+        ): String {
             return entries.formatTable(
                 Col { it.key },
-                Col { it.value }
+                Col { it.value },
+                gridLines = gridLines
             )
         }
     }

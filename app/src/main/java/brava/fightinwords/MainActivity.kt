@@ -53,7 +53,6 @@ class MainActivity : ComponentActivity(), WordSourceLoader {
      * ```
      */
     private val naspaWordList by lazy {
-        blog { "${this::class.simpleName}.cacheDir: ${this.cacheDir}" }
         return@lazy NaspaWordList(
             getCachedAssetBytes("en/NWL2023.txt").toAsciiUnsafe()
         )
@@ -64,7 +63,6 @@ class MainActivity : ComponentActivity(), WordSourceLoader {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        blog { "onCreate" }
         super.onCreate(savedInstanceState)
 
         val saveGameState = savedInstanceState?.loadSaveGameState()

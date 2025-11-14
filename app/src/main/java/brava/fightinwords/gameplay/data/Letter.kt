@@ -14,6 +14,7 @@ import kotlin.random.nextInt
  * A [Letter] is inherently *case-insensitive*.
  * The "canonical" form of a [Letter] should be *lower-case*.
  */
+@Serializable
 sealed interface Letter : Comparable<Letter> {
     companion object {
         fun Char.toLetter(): Letter = of(this)

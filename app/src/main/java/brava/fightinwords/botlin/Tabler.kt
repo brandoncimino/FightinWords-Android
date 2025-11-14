@@ -222,8 +222,10 @@ class Tabler {
     class Col<ROW, CELL>(
         val header: CharSequence? = null,
         val cellFunction: (ROW) -> CELL,
-    ) {
-
+    ) : (ROW) -> CELL {
+        override fun invoke(p1: ROW): CELL {
+            return cellFunction(p1)
+        }
     }
 
     companion object {
@@ -233,7 +235,7 @@ class Tabler {
             Always
         }
 
-        private fun <APPENDABLE : Appendable> APPENDABLE.appendTable(
+        private fun <APPENDABLE : Appendable> APPENDABLE.appendTableRows(
             rowInfos: List<RowInfo>,
             gridLines: BoxDrawingCharacters?,
         ): APPENDABLE {
@@ -351,14 +353,15 @@ class Tabler {
                 }
             }
 
-            return appendTable(
+            return appendTableRows(
                 rowInfos = rowInfos,
                 gridLines = gridLines
             )
         }
 
-        fun <ROW> Iterable<ROW>.formatTable(
-            vararg cols: Col<ROW, *>,
+
+        fun <ROW, CELL> Iterable<ROW>.formatTable(
+            vararg cols: (ROW) -> CELL,
             gridLines: BoxDrawingCharacters? = BoxDrawingCharacters.Rounded,
             errorRenderer: (Throwable) -> Any = { it },
             headerRowPresence: HeaderRowPresence = HeaderRowPresence.IfNotBlank,
@@ -366,7 +369,7 @@ class Tabler {
             return buildString {
                 appendTable(
                     this@formatTable,
-                    cols.asIterable(),
+                    cols.map { Col(cellFunction = it) },
                     errorRenderer,
                     gridLines,
                     headerRowPresence

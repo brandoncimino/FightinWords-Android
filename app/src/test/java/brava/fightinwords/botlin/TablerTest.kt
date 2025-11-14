@@ -4,27 +4,30 @@ import brava.fightinwords.botlin.BoxDrawingCharacters.Companion.appendRowSeparat
 import brava.fightinwords.botlin.BoxDrawingCharacters.Companion.rowPrefix
 import brava.fightinwords.botlin.BoxDrawingCharacters.Companion.rowSuffix
 import brava.fightinwords.botlin.Tabler.Companion.appendTable
+import brava.fightinwords.botlin.Tabler.Companion.formatTable
 import org.junit.Test
 import java.time.DayOfWeek
 
 class TablerTest {
     @Test
     fun simpleTable() {
-        val table = buildString {
-            appendTable(
+        val table =
                 listOf(
-                    "one", "two", "three", "four\nfive", """loooooooooooong
+                    "one",
+                    "two",
+                    "three",
+                    """four
+                        |five""".trimMargin(),
+                    """loooooooooooong
                     |short
                     |looooooooooong
                 """.trimMargin()
-                ),
-                listOf(
+                ).formatTable(
                     { it },
                     String::length,
-                    { it.uppercase() }
+                    { it.uppercase() },
+                    Tabler.Col { it.lowercase() }
                 )
-            )
-        }
 
         println(table)
     }
@@ -34,7 +37,9 @@ class TablerTest {
         val table = buildString {
             appendTable(
                 listOf("one"),
-                listOf(String::uppercase)
+                listOf(
+                    Tabler.Col { it.uppercase() }
+                )
             )
         }
 
@@ -53,10 +58,16 @@ class TablerTest {
      */
     @Test
     fun simplestTable() {
+        listOf(DayOfWeek.MONDAY)
+            .formatTable(
+                DayOfWeek::ordinal,
+                DayOfWeek::toString,
+                gridLines = null
+            )
         val table = buildString {
             appendTable(
                 listOf(DayOfWeek.MONDAY),
-                listOf(DayOfWeek::toString),
+                listOf(Tabler.Col { it.toString() }),
                 gridLines = null
             )
         }
@@ -69,9 +80,7 @@ class TablerTest {
         val gridLines = BoxDrawingCharacters.Rounded
         val colWidths = listOf(2, 3)
         val sb = StringBuilder()
-//            .apply {
         gridLines.appendRowSeparatorTo(sb, LineupLocation.Start, colWidths)
-//        }
 
         sb.appendJoin(
             colWidths,

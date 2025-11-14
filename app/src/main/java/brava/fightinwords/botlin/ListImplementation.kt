@@ -43,7 +43,7 @@ internal object ListImplementation {
         compareIndex: (index: Int) -> Int,
     ): Int {
         val shorter = min(aSize, bSize)
-        for (i in 0..shorter) {
+        for (i in 0 until shorter) {
             val indexComparison = compareIndex(i)
             if (indexComparison != 0) {
                 return indexComparison
@@ -64,7 +64,7 @@ internal object ListImplementation {
         }
 
         // We could call `lexicographicalCompare` here, but that would incur a redundant `min` call
-        for (i in 0..aSize) {
+        for (i in 0 until aSize) {
             val indexComparison = compareIndex(i)
             if (indexComparison != 0) {
                 return indexComparison

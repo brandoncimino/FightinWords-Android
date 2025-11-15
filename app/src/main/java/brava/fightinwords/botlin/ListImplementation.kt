@@ -280,3 +280,32 @@ private fun forEachWrappedRange_cSharpStyleInterpolatedString_sample() {
 
     assert(stringBuilder.toString() == "Today is Monday")
 }
+
+
+/**
+ * This is basically [androidx.compose.ui.util.fastForEach], but:
+ * - Doesn't infect the code with [android] or [androidx] dependencies.
+ * - Doesn't require that you first cast to [List], which the silly [androidx.compose.ui.util.fastForEach] does because they don't trust
+ * all [List] implementations to be [RandomAccess] _(and apparently also don't trust every random-access [List] to be [RandomAccess], either)_.
+ *
+ * Regarding the trust factor - I find the [RandomAccess] interface quite redundant;
+ * [List.get] is the _entire difference_ between [List] and [Collection].
+ *
+ * I think it is more likely that someone _(e.g. me)_ forgot to implement [RandomAccess] on a [List] that deserves it
+ * than it is that they implemented [List] for something that shouldn't use [List.get].
+ *
+ * This seems to align with [androidx.compose.ui.util.fastForEach], given that they also don't require the [RandomAccess] interface.
+ */
+inline fun <T> Iterable<T>.smartForEach(
+    action: (T) -> Unit,
+) {
+    when (this) {
+        is List<T> -> {
+            for (i in indices) {
+                action(get(i))
+            }
+        }
+
+        else       -> forEach(action)
+    }
+}

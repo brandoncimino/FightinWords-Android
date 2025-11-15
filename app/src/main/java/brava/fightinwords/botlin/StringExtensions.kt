@@ -1,22 +1,6 @@
 package brava.fightinwords.botlin
 
-/**
- * This is basically [androidx.compose.ui.util.fastForEach],
- * but I don't like having [android] or [androidx] dependencies floating around my code.
- */
-private inline fun <T> Iterable<T>.smartForEach(
-    action: (T) -> Unit,
-) {
-    when (this) {
-        is List<T> -> {
-            for (i in indices) {
-                action(get(i))
-            }
-        }
 
-        else       -> forEach(action)
-    }
-}
 
 /**
  * Similar to [Iterable.contains], but using [CharSequence.contentEquals] to allow the specification of [ignoreCase].

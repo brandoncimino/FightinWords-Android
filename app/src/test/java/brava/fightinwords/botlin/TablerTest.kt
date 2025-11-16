@@ -5,7 +5,7 @@ import brava.fightinwords.botlin.BoxDrawingCharacters.Companion.rowPrefix
 import brava.fightinwords.botlin.BoxDrawingCharacters.Companion.rowSuffix
 import brava.fightinwords.botlin.Tabler.Companion.appendTable
 import brava.fightinwords.botlin.Tabler.Companion.formatTable
-import brava.fightinwords.println
+import brava.fightinwords.printing
 import org.junit.Test
 import java.time.DayOfWeek
 
@@ -123,7 +123,7 @@ class TablerTest {
             listOf(1 to 0),
             listOf(2 to 0, 2 to 1, 2 to 2)
         ).formatTable()
-            .println()
+            .printing()
     }
 }
 

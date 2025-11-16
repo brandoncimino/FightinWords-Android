@@ -80,7 +80,7 @@ class DataGeneratorTest {
 
     fun printRelationship(a: TypeToken<*>, b: TypeToken<*>) {
         println(describeRelationship(a, b))
-        println()
+        printing()
     }
 
     fun describeRelationship(a: TypeToken<*>, b: TypeToken<*>): String {
@@ -210,7 +210,7 @@ class DataGeneratorTest {
             .isEqualTo("yolo")
 
 //        val foundGenerator = dataGenerator.generators.findInstanceOrChild(typeToken<Generator<CharSequence>>())
-//        println("foundGenerator = ${foundGenerator}")
+//        printed("foundGenerator = ${foundGenerator}")
 
         val generatedCharSequence: CharSequence = dataGenerator.generate<CharSequence>()
         println("generatedCharSequence = $generatedCharSequence")

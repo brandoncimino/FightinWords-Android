@@ -436,7 +436,10 @@ inline fun <A : Appendable, T> Iterable<T>.joinTo(
     prefix: A.() -> Unit = {},
     suffix: A.() -> Unit = {},
 ): A {
+    var anyElements = false
     forEachIndexed { index, t ->
+        anyElements = true
+
         when (index) {
             0    -> appendable.prefix()
             else -> appendable.separator()
@@ -445,7 +448,9 @@ inline fun <A : Appendable, T> Iterable<T>.joinTo(
         appendable.element(t)
     }
 
-    appendable.suffix()
+    if (anyElements) {
+        appendable.suffix()
+    }
 
     return appendable
 }

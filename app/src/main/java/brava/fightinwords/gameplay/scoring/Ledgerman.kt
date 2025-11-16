@@ -1,7 +1,9 @@
 package brava.fightinwords.gameplay.scoring
 
+import android.util.Log
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.botlin.TinyFlags
+import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.Arbiter
 import brava.fightinwords.gameplay.Arbiter.Companion.getSerializableState
 import brava.fightinwords.gameplay.FocusLens
@@ -141,6 +143,7 @@ class Ledgerman(
     fun collapseFocusedWord() = focusedWordLens.collapse()
 
     fun focusOnWord(wordKey: WordKey) {
+        blog { "focusOnWord: $wordKey" }
         toFocusedWord(wordKey.word)?.let {
             focusedWordLens.focusOn(it)
         }
@@ -150,15 +153,19 @@ class Ledgerman(
         val definition = sharedResources.factotum.findDefinition(word)
 
         if (definition == null) {
+            blog(level = Log.ERROR) {
+                "Couldn't find a definition for the word `$word`, so we can't focus on it!"
+            }
             return null
         }
 
-        val score = arbiter.getCurrentStateOf(word)
-
-        return when (score) {
+        return when (val score = arbiter.getCurrentStateOf(word)) {
             is SubmissionResult.Accepted -> FocusedWord(definition, score.category, score.points)
             is SubmissionResult.Rejected -> FocusedWord(definition, null, null)
-            null                         -> null
+            null -> {
+                blog(level = Log.WARN) { "Couldn't find a score for the word `$word`, so we can't focus on it!" }
+                null
+            }
         }
     }
 

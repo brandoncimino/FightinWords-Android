@@ -309,3 +309,18 @@ inline fun <T> Iterable<T>.smartForEach(
         else       -> forEach(action)
     }
 }
+
+/**
+ * @see smartForEach
+ */
+inline fun <T> Iterable<T>.smartAll(
+    predicate: (T) -> Boolean,
+): Boolean {
+    smartForEach {
+        if (predicate(it) == false) {
+            return false
+        }
+    }
+
+    return true
+}

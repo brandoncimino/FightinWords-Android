@@ -131,7 +131,9 @@ class Ledgerman(
             yieldAll(coreWordPool.words)
         }
             .distinct()
+            .filter(wordFilterManger::filter)
             .mapNotNull { getScoreboardWordVisibility(it) }
+            .sortedWith(Comparator.comparing({ it.word }, wordSorting))
             .toList()
     }
 

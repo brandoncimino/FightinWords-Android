@@ -7,7 +7,14 @@ import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import kotlin.reflect.KProperty
 
-inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String? = javaClass.simpleName, message: () -> Any?) {
+inline fun <T> T.blog(
+    level: Int = Log.INFO,
+    tag: String? = (when (this) {
+        Unit -> null
+        else -> this?.javaClass?.simpleName
+    }),
+    message: () -> Any?,
+): T {
     if (Log.isLoggable(tag, level)) {
         Log.println(
             level, tag, runCatching(message)
@@ -17,6 +24,8 @@ inline fun <T : Any> T.blog(level: Int = Log.INFO, tag: String? = javaClass.simp
             }
         )
     }
+
+    return this
 }
 
 inline fun <reified T> T.andBlog(

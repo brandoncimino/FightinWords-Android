@@ -1,7 +1,15 @@
 package brava.fightinwords.gameplay.data
 
 import brava.fightinwords.botlin.debugAssert
+import brava.fightinwords.gameplay.data.Word.Companion.indices
+import brava.fightinwords.gameplay.data.Word.Companion.toWord
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlin.random.Random
 import kotlin.random.nextInt
 
@@ -14,8 +22,32 @@ import kotlin.random.nextInt
  * A [Letter] is inherently *case-insensitive*.
  * The "canonical" form of a [Letter] should be *lower-case*.
  */
-@Serializable
+@Serializable(Letter.Serializer::class)
 sealed interface Letter : Comparable<Letter> {
+    object Serializer : KSerializer<Letter> {
+        override val descriptor: SerialDescriptor
+            get() = PrimitiveSerialDescriptor(
+                Letter::class.qualifiedName!!,
+                PrimitiveKind.STRING
+            )
+
+        override fun serialize(
+            encoder: Encoder,
+            value: Letter,
+        ) {
+            encoder.encodeString(Character.toString(value.codePoint))
+        }
+
+        override fun deserialize(decoder: Decoder): Letter {
+            val word = decoder.decodeString().toWord()
+            if (word.length != 1) {
+                throw IllegalArgumentException("Expected exactly 1 letter, but found ${word.length}: word = `$word`, letters = ${word.indices.map { word[it] }}")
+            }
+            return word[0]
+        }
+
+    }
+
     companion object {
         fun Char.toLetter(): Letter = of(this)
         fun Int.toLetter(): Letter = of(this)
@@ -180,7 +212,11 @@ internal fun Int.toLowerAz(): Byte = asLowerAz().rejectNotAz(this)
 
 @JvmInline
 @Serializable
-value class CodePointLetter internal constructor(override val codePoint: Int) : Letter
+value class CodePointLetter internal constructor(override val codePoint: Int) : Letter {
+    override fun toString(): String {
+        return describeCodePoint(codePoint)
+    }
+}
 
 private fun describeCodePoint(codePoint: Int): String =
     when (Character.isValidCodePoint(codePoint)) {

@@ -4,9 +4,12 @@ package brava.fightinwords
 
 import android.util.Log
 import brava.fightinwords.botlin.TinyFlags
+import brava.fightinwords.botlin.appendJoin
 import brava.fightinwords.botlin.blog
 import brava.fightinwords.gameplay.data.Letter
+import brava.fightinwords.gameplay.data.StringWord
 import brava.fightinwords.gameplay.data.TinyLetter
+import brava.fightinwords.gameplay.data.TinyWord
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import com.google.common.collect.ImmutableList
@@ -38,6 +41,21 @@ class DataGenerator(
     private val middlemanConverters: ImmutableMap<TypeToken<*>, MiddlemanConverter<*, *>>,
     val config: Config,
 ) {
+    data class Blogger(
+        val prefix: String?,
+        val tag: String?,
+        val level: Int,
+    ) {
+        inline operator fun invoke(
+            message: () -> Any,
+        ) {
+            when (prefix) {
+                null -> blog(level, tag, message)
+                else -> blog(level, tag) { "$prefix ${message()}" }
+            }
+        }
+    }
+
     data class Config(
         val preferDefaultParameterValues: Boolean = false,
         val generateEmptyCollectionsIfNecessary: Boolean = false,
@@ -147,10 +165,27 @@ class DataGenerator(
 
             addGenerator<TinyLetter> { TinyLetter.random(it.random) }
             addGenerator<Letter> {
-                it.random.nextInt(
-                    Character.MIN_CODE_POINT..Character.MAX_CODE_POINT
-                ).let { codePoint -> Letter.of(codePoint) }
+                val maxAttempts: Int = 10
+                for (i in 0 until maxAttempts) {
+                    val codePoint = it.random.nextInt(
+                        Character.MIN_CODE_POINT..Character.MAX_CODE_POINT
+                    )
+                    if (Character.isLetter(codePoint)) {
+                        val letter = Letter.of(codePoint)
+                        blog { "Generated letter: $letter" }
+                        return@addGenerator letter
+                    }
+                }
+                val fallback = Letter.of('ß')
+                blog { "Unable to generate an actual letter after $maxAttempts attempts; falling back to $fallback" }
+                return@addGenerator fallback
             }
+
+            addMiddlemanConverter<TinyWord, List<TinyLetter>> { it.toWord() as TinyWord }
+            addMiddlemanConverter<StringWord, List<Letter>> {
+                (it + Letter.of('ß')).toWord() as StringWord
+            }
+
 
             addMiddlemanConverter<Word, List<Letter>> { it.toWord() }
             addGenerator<TinyFlags> {
@@ -172,20 +207,15 @@ class DataGenerator(
 
     @Contract(pure = true)
     fun <T : Any> generate(outputType: TypeToken<T>, random: Random = Random): T {
-        val generator = tryCreateGenerator(outputType)
+        val generator = tryCreateGenerator(outputType, null)
                         ?: throw IllegalArgumentException("I can't generate instances of $outputType!")
         return generator(Context(config, random))
     }
 
-    fun <T : Any> tryCreateValueTypeGenerator(
-        outputValueType: TypeToken<T>,
-    ): Generator<T>? {
-        TODO()
-    }
-
-    fun <T : Any> tryCreateConstructorGenerator(
+    private fun <T : Any> tryCreateConstructorGenerator(
         outputType: TypeToken<T>,
         constructor: KFunction<T>,
+        blogger: Blogger,
     ): Generator<T>? {
         val primaryParameters = constructor.parameters
 
@@ -199,7 +229,7 @@ class DataGenerator(
                         //   return the "inlined" version of a `@JvmInline` type, which is NOT COMPATIBLE with `.callBy()`.
                         // See: https://youtrack.jetbrains.com/issue/KT-64097
                         val resolved = outputType.resolveType(param.type.javaType)
-                        blog(level = Log.VERBOSE) { "Resolving the parameter type ${param.type.javaType} in the context of $outputType to -> $resolved" }
+                        blogger { "Resolving the parameter type ${param.type.javaType} in the context of $outputType to -> $resolved" }
                         resolved
                     }
 
@@ -210,7 +240,7 @@ class DataGenerator(
                     else                                    -> TypeToken.of(param.type.javaType)
                 }
 
-                println(
+                blogger {
                     """
                     param.type:            [${param.type::class}] ${param.type}
                     param.type.jvmErasure: ${param.type.jvmErasure}
@@ -221,17 +251,23 @@ class DataGenerator(
                     param.type.classifier: ${param.type.classifier}
                      > ${param.type.classifier!!::class}
                 """.trimIndent()
-                )
-                println("  TypeToken.of(param.type.jvmErasure.javaObjectType) = ${TypeToken.of(param.type.jvmErasure.javaObjectType)}")
+                }
+                blogger {
+                    "  TypeToken.of(param.type.jvmErasure.javaObjectType) = ${
+                        TypeToken.of(
+                            param.type.jvmErasure.javaObjectType
+                        )
+                    }"
+                }
 
                 param.kind
 
-                val paramGen = tryCreateGenerator(paramTypeToken)
+                val paramGen = tryCreateGenerator(paramTypeToken, blogger)
                 if (paramGen == null) {
                     if (param.isOptional) {
-                        this@DataGenerator.blog(level = Log.VERBOSE) { "Couldn't create a generator for the $outputType primary constructor parameter $param, but that parameter is optional, so we'll be able to use the default value." }
+                        blogger { "Couldn't create a generator for the $outputType primary constructor parameter $param, but that parameter is optional, so we'll be able to use the default value." }
                     } else {
-                        this@DataGenerator.blog {
+                        blogger {
                             "Couldn't create a generator for the REQUIRED $outputType primary constructor parameter ${param.type}, so we won't be able to construct $outputType this way!"
                         }
                         return null
@@ -246,26 +282,16 @@ class DataGenerator(
             val argMap = buildMap {
                 for ((param, generator) in parameterGenerators) {
                     if (param.isOptional && config.preferDefaultParameterValues) {
-                        this@DataGenerator.blog(level = Log.VERBOSE) { "Using the default value for the $outputType primary constructor parameter $param - even though we _could_ generate it - because of the config: $config" }
+                        blogger { "Using the default value for the $outputType primary constructor parameter $param - even though we _could_ generate it - because of the config: $config" }
                         continue
                     }
 
                     val generated = generator(context)
-//                    if(param.type.jvmErasure.isValue){
-//                       val boxed = param.type.jvmErasure.functions
-//                           .first { it.name == "box_impl" }
-//                           .call(generated)
-//
-//                        put(param, boxed)
-//                    }
-//                    else {
-//                        put(param, generated)
-//                    }
                     put(param, generated)
                 }
             }
 
-            this@DataGenerator.blog(level = Log.VERBOSE) {
+            blogger {
                 """Constructing $outputType with the arguments:
                 |${
                     argMap.entries.joinToString(separator = "\n") {
@@ -283,57 +309,77 @@ class DataGenerator(
         }
     }
 
-    @Contract(pure = true)
-    inline fun <reified T : Any> tryCreateGenerator(): Generator<T>? =
-        tryCreateGenerator(typeToken<T>())
+    fun <T : Any> tryCreateGenerator(
+        outputType: TypeToken<T>,
+        outerBlogger: Blogger?,
+    ): Generator<T>? {
+        val blogger: Blogger = outerBlogger?.copy(
+            prefix = createSubIndent(
+                currentIndent = outerBlogger.prefix ?: "",
+                subIndent = "[${outputType.shortName()}]",
+                outdent = "↳ "
+            )
+        )
+                               ?: Blogger(
+                                   outputType.shortName(),
+                                   DataGenerator::class.simpleName,
+                                   Log.DEBUG
+                               )
 
-    fun <T : Any> tryCreateGenerator(outputType: TypeToken<T>): Generator<T>? {
         if (outputType.type is WildcardType) {
-            blog(level = Log.DEBUG) { "Cannot generate wildcard types like `$outputType`!" }
+            blogger { "Cannot generate wildcard types like `$outputType`!" }
             return null
         }
         if (outputType in forbiddenTypes) {
-            blog(level = Log.DEBUG) { "Cannot generate `$outputType` because it is one of the forbidden types: $forbiddenTypes" }
+            blogger { "Cannot generate `$outputType` because it is one of the forbidden types: $forbiddenTypes" }
             return null
         }
 
-        return sequenceOf<() -> Generator<T>?>(
-            { findSimpleGenerator(outputType) },
-            { tryCreateMiddlemanagedGenerator(outputType) },
-            { tryCreateCollectionGenerator(outputType) },
-            { tryCreateEnumGenerator(outputType) },
-            { tryCreatePrimaryConstructorGenerator(outputType) },
-            { tryCreateSealedTypeGenerator(outputType) },
+        val result = sequenceOf<() -> Generator<T>?>(
+            { findSimpleGenerator(outputType, blogger) },
+            { tryCreateMiddlemanagedGenerator(outputType, blogger) },
+            { tryCreateCollectionGenerator(outputType, blogger) },
+            { tryCreateEnumGenerator(outputType, blogger) },
+            { tryCreatePrimaryConstructorGenerator(outputType, blogger) },
+            { tryCreateSealedTypeGenerator(outputType, blogger) },
         ).firstNotNullOfOrNull { it() }
+
+        if (result == null) {
+            blogger { "Unable to create ANY kind of generator for: $outputType" }
+            return null
+        }
+
+        blogger { "Created $result to generate $outputType" }
+        return result
     }
 
-    private fun <T : Any> findSimpleGenerator(outputType: TypeToken<T>): Generator<T>? {
+    private fun <T : Any> findSimpleGenerator(
+        outputType: TypeToken<T>,
+        blogger: Blogger,
+    ): Generator<T>? {
         val found = simpleGenerators.findByTypeOrSubtype(outputType.wrap())
         if (found == null) {
-            blog(level = Log.DEBUG) { "No dedicated simple generator for the type: $outputType" }
+            blogger { "No dedicated simple generator for the type: $outputType" }
             return null
         }
 
         @Suppress("UNCHECKED_CAST")
         val foundCast = found as Generator<T>
 
-//        if(outputType.isPrimitive){
-//            return Generator {
-//                @Suppress("UNCHECKED_CAST")
-//                outputType.rawType.cast(foundCast(it)) as T
-//            }
-//        }
-
         return foundCast
     }
 
-    private fun <T : Any> tryCreatePrimaryConstructorGenerator(outputType: TypeToken<T>): Generator<T>? {
+    private fun <T : Any> tryCreatePrimaryConstructorGenerator(
+        outputType: TypeToken<T>,
+        blogger: Blogger,
+    ): Generator<T>? {
         val kClass: KClass<in T> = outputType.rawType.kotlin
         if (kClass.isData || kClass.isValue) {
             @Suppress("UNCHECKED_CAST")
             val constructorGenerator = tryCreateConstructorGenerator(
                 outputType,
-                kClass.primaryConstructor as KFunction<T>
+                kClass.primaryConstructor as KFunction<T>,
+                blogger
             )
 
             return constructorGenerator
@@ -342,36 +388,56 @@ class DataGenerator(
         return null
     }
 
-    private fun <T : Any> tryCreateMiddlemanagedGenerator(outputType: TypeToken<T>): Generator<T>? {
+    private fun <T : Any> tryCreateMiddlemanagedGenerator(
+        outputType: TypeToken<T>,
+        blogger: Blogger,
+    ): Generator<T>? {
         @Suppress("UNCHECKED_CAST")
         val middlemanConverter =
             middlemanConverters.findByTypeOrSubtype(outputType) as MiddlemanConverter<T, *>?
-            ?: return null
+        if (middlemanConverter == null) {
+            blogger { "No ${MiddlemanConverter::class.simpleName} for the type: $outputType" }
+            return null
+        }
+
+        blogger { "Attempting to generate the middleman ${middlemanConverter.middlemanType} and then convert it to $outputType" }
         // Not really sure why, but I can't inline this 🤷‍♀️
-        return tryCreateMiddlemanagedGenerator(middlemanConverter)
+        return tryCreateMiddlemanagedGenerator(middlemanConverter, blogger)
     }
 
-    private fun <T : Any> tryCreateCollectionGenerator(outputType: TypeToken<T>): Generator<T>? {
-        val collector = findCollector(outputType) ?: return null
-        return tryCreateCollectionGenerator(outputType, collector)
+    private fun <T : Any> tryCreateCollectionGenerator(
+        outputType: TypeToken<T>,
+        blogger: Blogger,
+    ): Generator<T>? {
+        val collector =
+            findCollector(outputType)
+        if (collector == null) {
+            blogger { "No ${CollectionCollector::class.simpleName} for the type: $outputType" }
+            return null
+        }
+
+        blogger { "Attempting to use ${CollectionCollector::class.simpleName} $collector to generate $outputType" }
+        return tryCreateCollectionGenerator(outputType, collector, blogger)
     }
 
     private fun <T : Any> tryCreateCollectionGenerator(
         outputType: TypeToken<T>,
         collector: CollectionCollector<T>,
+        blogger: Blogger,
     ): Generator<T>? {
         val outputElementType = outputType.getActualGenericTypeArgument(Collection::class)
         val elementGenerator =
-            tryCreateGenerator(outputElementType.resolveType(outputElementType.rawType))
+            tryCreateGenerator(outputElementType.resolveType(outputElementType.rawType), blogger)
 
         if (elementGenerator == null) {
             if (config.generateEmptyCollectionsIfNecessary) {
-                blog(level = Log.DEBUG) { "Unable to generate elements of type $outputElementType, so we'll just generate empty $outputType collections instead." }
+                blogger { "Unable to generate elements of type $outputElementType, so we'll just generate empty $outputType collections instead." }
                 return Generator { collector.createEmpty() }
             }
-            blog(level = Log.DEBUG) { "Unable to generate elements of type $outputElementType, which means we can't generate collections of $outputType, either!" }
+            blogger { "Unable to generate elements of type $outputElementType, which means we can't generate collections of $outputType, either!" }
             return null
         } else {
+            blogger { "Generating elements of type $outputElementType, and then collecting them into $outputType" }
             return collector.createGenerator(elementGenerator)
         }
     }
@@ -386,13 +452,14 @@ class DataGenerator(
 
     private fun <T : Any, M : Any> tryCreateMiddlemanagedGenerator(
         middlemanConverter: MiddlemanConverter<T, M>,
+        blogger: Blogger,
     ): Generator<T>? {
         val middlemanType = middlemanConverter.middlemanType
 
-        val middlemanGenerator = tryCreateGenerator(middlemanType)
+        val middlemanGenerator = tryCreateGenerator(middlemanType, blogger)
 
         if (middlemanGenerator == null) {
-            blog(level = Log.DEBUG) {
+            blogger {
                 "Unable to generate the middleman type $middlemanType, so we can't use the middleman converter $middlemanConverter"
             }
             return null
@@ -406,9 +473,10 @@ class DataGenerator(
 
     private fun <T : Any> tryCreateEnumGenerator(
         outputType: TypeToken<T>,
+        blogger: Blogger,
     ): Generator<T>? {
         if (outputType.rawType.isEnum == false) {
-            blog(level = Log.VERBOSE) {
+            blogger {
                 "$outputType is NOT an enum type"
             }
             return null
@@ -420,11 +488,12 @@ class DataGenerator(
 
     private fun <T : Any> tryCreateSealedTypeGenerator(
         outputType: TypeToken<T>,
+        blogger: Blogger,
     ): Generator<T>? {
         val sealedSubtypes = outputType.rawType.permittedSubclasses
 
         if (sealedSubtypes.isNullOrEmpty()) {
-            blog(level = Log.VERBOSE) {
+            blogger {
                 "$outputType is NOT a sealed type"
             }
             return null
@@ -432,9 +501,9 @@ class DataGenerator(
 
         val subtypeGenerators = sealedSubtypes.map {
             val typedSubtype = outputType.getSubtype(it)
-            val subtypeGenerator = tryCreateGenerator(typedSubtype)
+            val subtypeGenerator = tryCreateGenerator(typedSubtype, blogger)
             if (subtypeGenerator == null) {
-                blog(level = Log.DEBUG) {
+                blogger {
                     "Cannot generate instances of the sealed type $outputType's subtype $typedSubtype! To generate $outputType, we must be able to generate it directly, OR generate all of its permitted subtypes:\n${
                         sealedSubtypes.joinToString(
                             "\n"
@@ -480,7 +549,7 @@ fun interface CollectionCollector<SELF> where SELF : Any {
     fun createEmpty(): SELF = collect(sequenceOf())
 }
 
-fun <T : Any> CollectionCollector<T>.createGenerator(
+private fun <T : Any> CollectionCollector<T>.createGenerator(
     elementGenerator: Generator<*>,
 ): Generator<T> {
     return Generator { context ->
@@ -527,4 +596,49 @@ fun <T : Any> TypeToken<T>.getValueTypeBoxer(): Invokable<T, T> {
 
     val boxMethod = this.rawType.declaredMethods.first { it.name == "box-impl" }
     return method(boxMethod).returning(this)
+}
+
+private fun createSubIndent(
+    currentIndent: CharSequence,
+    subIndent: Any,
+    outdent: CharSequence = "",
+): String {
+    return buildString {
+        val spaceBeforeOutdent = currentIndent.length - outdent.length
+
+        for (i in currentIndent.indices) {
+            if (i >= spaceBeforeOutdent) {
+                append(outdent[i - spaceBeforeOutdent])
+            } else {
+                append(' ')
+            }
+        }
+
+        append(subIndent)
+    }
+}
+
+private fun <T : Any> TypeToken<T>.shortName(depth: Int = 2): String {
+    val type = this
+    return buildString {
+        val outerType = type.rawType.declaringClass
+        if (outerType != null) {
+            append(TypeToken.of(outerType).shortName(depth - 1))
+            append('.')
+        }
+
+        append(type.rawType.simpleName)
+
+        appendJoin(
+            stuff = type.rawType.typeParameters.asIterable(),
+            element = {
+                append(
+                    type.resolveType(it).shortName(depth - 1)
+                )
+            },
+            separator = { append(',') },
+            prefix = { append('<') },
+            suffix = { append('>') }
+        )
+    }
 }

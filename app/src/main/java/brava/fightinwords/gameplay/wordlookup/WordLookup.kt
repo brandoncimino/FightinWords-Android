@@ -108,7 +108,7 @@ inline fun WordList.forEachWordWithLength(
 fun WordList.findConstructibleWords(
     letterPool: LetterPool,
     minimumWordLength: Int,
-    maximumWordLength: Int = minimumWordLength + letterPool.size,
+    maximumWordLength: Int,
 ): Set<Word> {
     return when (this) {
         is ShortlexWordList -> {

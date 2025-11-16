@@ -5,5 +5,6 @@ import brava.fightinwords.gameplay.data.Letter
 
 enum class LetterSorting(val comparator: Comparator<Letter>) : Comparator<Letter> by comparator {
     Alphabetical(Comparator.naturalOrder()),
-    Phonological(Comparator.comparingInt { it.englishPhonology.ordinal });
+    Phonological(Comparator.comparingInt<Letter> { it.englishPhonology.ordinal }
+                     .then(Alphabetical));
 }

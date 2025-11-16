@@ -1,16 +1,13 @@
 package brava.fightinwords.gameplay.data
 
-import androidx.compose.ui.util.fastForEach
 import brava.fightinwords.botlin.ListImplementation
+import brava.fightinwords.botlin.smartForEach
 import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
 import brava.fightinwords.gameplay.data.TinyWord.Companion.asTinyWord
 import brava.fightinwords.gameplay.data.Word.Companion.indices
-import brava.fightinwords.ui.submissions.appendCodePoint
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.LongArraySerializer
-import kotlinx.serialization.cbor.CborEncoder
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -115,10 +112,6 @@ sealed interface Word : Comparable<Word> {
             encoder: Encoder,
             value: Word,
         ) {
-            LongArraySerializer()
-            // TODO: What was I even doing here?
-            val cborEncoder = encoder as CborEncoder
-//            encoder.encodeSerializableValue(ByteArraySerializer(), value)
             encoder.encodeString(value.toString())
         }
 
@@ -151,7 +144,13 @@ sealed interface Word : Comparable<Word> {
                 }
             }
 
-            return LetterListWord(this.toList())
+            return StringWord(
+                buildString {
+                    smartForEach {
+                        appendCodePoint(it.codePoint)
+                    }
+                }
+            )
         }
 
         fun String.toWord(): Word {
@@ -210,9 +209,9 @@ sealed interface Word : Comparable<Word> {
 
 @Serializable
 @JvmInline
-private value class StringWord(val stringValue: String) : Word {
+internal value class StringWord(val stringValue: String) : Word {
     override val length: Int
-        get() = stringValue.length
+        get() = stringValue.codePointCount(0, stringValue.length)
 
     override fun get(index: Int): Letter {
         return stringValue.codePoints()
@@ -224,31 +223,6 @@ private value class StringWord(val stringValue: String) : Word {
 
     override fun toString(): String {
         return stringValue
-    }
-}
-
-/**
- * A [Word] constructed from an existing [List] of [Letter]s.
- */
-@JvmInline
-private value class LetterListWord(val letters: List<Letter>) : Word {
-    override val length: Int
-        get() = letters.size
-
-    init {
-        if (letters.all { it is TinyLetter }) {
-            throw IllegalArgumentException("You shouldn't have constructed a ${this::class.simpleName} using only ${TinyLetter::class.simpleName}s - you should have have simplified it into a ${TinyWord::class.simpleName}!")
-        }
-    }
-
-    override fun toString(): String {
-        return StringBuilder()
-            .appendWord(this)
-            .toString()
-    }
-
-    override fun get(index: Int): Letter {
-        return letters[index]
     }
 }
 
@@ -265,13 +239,6 @@ fun <T : Appendable> T.appendWord(word: Word): T {
         is TinyWord   -> {
             for (i in word.indices) {
                 append(word[i].character)
-            }
-            this
-        }
-
-        is LetterListWord -> {
-            word.letters.fastForEach {
-                appendCodePoint(it.codePoint)
             }
             this
         }

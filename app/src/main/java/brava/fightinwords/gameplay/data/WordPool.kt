@@ -10,14 +10,17 @@ class WordPool private constructor(
     val letterPool: LetterPool,
     val words: Set<Word>,
 ) {
+    init {
+        require(words.isNotEmpty()) { "You cannot play with an empty ${this::class.simpleName}!" }
+    }
+
     constructor(
         letterPool: LetterPool,
         wordList: WordList,
-        minimumWordLength: Int,
-        maximumWordLength: Int = minimumWordLength + letterPool.size,
+        wordLengthRange: IntRange,
     ) : this(
         letterPool,
-        wordList.findConstructibleWords(letterPool, minimumWordLength, maximumWordLength)
+        wordList.findConstructibleWords(letterPool, wordLengthRange.first, wordLengthRange.last)
     )
 
     fun contains(word: Word): Boolean = words.contains(word)

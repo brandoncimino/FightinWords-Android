@@ -8,8 +8,7 @@ sealed interface WordFilter {
     fun filter(word: Word): Boolean
 
     @Serializable
-    @JvmInline
-    value class LengthFilter(val wordLength: Int) : WordFilter {
+    data class LengthFilter(val wordLength: Int) : WordFilter {
         override fun filter(word: Word): Boolean {
             return word.length == wordLength
         }

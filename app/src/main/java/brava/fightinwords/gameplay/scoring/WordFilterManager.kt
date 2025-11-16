@@ -76,7 +76,8 @@ class SingleSelectWordFilters(private var selected: WordFilter? = null) : WordFi
     }
 
     @Serializable
-    class SingleSelectSerializableState(val selected: WordFilter?) : WordFilterManager.SerializableState
+    data class SingleSelectSerializableState(val selected: WordFilter?) :
+        WordFilterManager.SerializableState
 
     override fun snapshot() = SingleSelectSerializableState(selected)
 
@@ -143,7 +144,8 @@ class MultiSelectWordFilters(
     }
 
     @Serializable
-    class MultiSelectSerializableState(val lengthFilters: TinyFlags) : WordFilterManager.SerializableState
+    data class MultiSelectSerializableState(val lengthFilters: TinyFlags) :
+        WordFilterManager.SerializableState
 
     override fun snapshot() = MultiSelectSerializableState(lengthFilters)
 }

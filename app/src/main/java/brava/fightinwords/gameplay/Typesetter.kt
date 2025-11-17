@@ -2,7 +2,6 @@ package brava.fightinwords.gameplay
 
 import brava.fightinwords.SaveGameState
 import brava.fightinwords.gameplay.Galley.Companion.currentLetters
-import brava.fightinwords.gameplay.data.Letter
 import brava.fightinwords.gameplay.data.Word
 import brava.fightinwords.gameplay.data.Word.Companion.indices
 import brava.fightinwords.gameplay.hr.EmployeeFactory
@@ -10,23 +9,20 @@ import kotlinx.serialization.Serializable
 import java.util.Comparator.comparing
 import kotlin.random.Random
 
-class Typesetter(
+class Typesetter private constructor(
     slugs: List<Slug>,
-    val galley: Galley<Slug> = Galley(slugs.size)
+    val galley: Galley<Slug>,
 ) {
     /**
-     * @param progenitorPool The original [Slug]s that the game was started with.
+     * Constructs a brand-new [brava.fightinwords.gameplay.Typesetter].
      */
-    constructor(progenitorPool: Iterable<Letter>) : this(
-        progenitorPool.map { Slug(it) }
-    )
-
     constructor(progenitorPool: Word) : this(
         buildList<Slug> {
             for (i in progenitorPool.indices) {
                 add(Slug(progenitorPool[i]))
             }
-        }
+        }.shuffled(),
+        Galley(progenitorPool.length)
     )
 
     /**
@@ -34,25 +30,6 @@ class Typesetter(
      */
     var currentPool: List<Slug> = slugs
         private set
-
-    /**
-     * Constructs a [Typesetter] that is already "in-progress".
-     */
-    constructor(
-        slugStates: Collection<Slug.State>
-    ) : this(
-        slugStates.map { Slug(it.letter) },
-    ) {
-        val indexed = slugStates.withIndex()
-        indexed.filter<IndexedValue<Slug.State>> { (_, state) -> state.galleyIndex >= 0 }
-            .sortedBy<IndexedValue<Slug.State>, Int> { (_, state) -> state.galleyIndex }
-            .forEach<IndexedValue<Slug.State>> { (index, _) -> galley.add(currentPool[index]) }
-    }
-
-    /**
-     * The selected letters waiting to be submitted.
-     */
-//    val galley: Galley<Slug> = Galley(slugs.size)
 
     private data class SortState(val letterSorting: LetterSorting, val isDescending: Boolean)
 
@@ -138,7 +115,19 @@ class Typesetter(
             state: SerializableState,
             sharedResources: EmployeeFactory.SharedResources,
         ): Typesetter {
-            return Typesetter(state.slugStates)
+            val poolSlugs = state.slugStates.map { Slug(it.letter) }
+            val galleySlugs = state.slugStates.asSequence()
+                .withIndex()
+                .filter { (poolIndex, slugState) -> slugState.isSlotted() }
+                .sortedBy { (poolIndex, slugState) -> slugState.galleyIndex }
+                .map { (poolIndex, slugState) ->
+                    poolSlugs[poolIndex]
+                }.toList()
+
+            return Typesetter(
+                slugs = poolSlugs,
+                galley = Galley(poolSlugs.size, galleySlugs)
+            )
         }
 
         override fun SaveGameState.getEmployeeState(): SerializableState = typesetterState

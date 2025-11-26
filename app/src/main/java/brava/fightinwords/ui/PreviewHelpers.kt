@@ -148,6 +148,37 @@ object PreviewHelpers {
                 )
             }
     }
+
+    fun typesetterState(
+        vararg letterPool: Pair<Char, Boolean>,
+    ): TypesetterState {
+        var galleyIndex = 0
+        val letterButtonStates = letterPool.map { (letter, isSlotted) ->
+            Slug.State(
+                letter.toLetter(), when (isSlotted) {
+                    true -> galleyIndex++
+                    false -> -1
+                }
+            )
+        }
+
+        return TypesetterState(
+            letterButtonStates
+                .filter { it.isSlotted() }
+                .map { it.letter }
+                .toWord(),
+            letterButtonStates
+        )
+    }
+
+    fun typesetterState(
+        letterPool: String,
+        isSlotted: (Int, Char) -> Boolean = { index, letter -> index % 3 == 0 },
+    ): TypesetterState {
+        val letterPairs =
+            letterPool.mapIndexed { index, letter -> letter to isSlotted(index, letter) }
+        return typesetterState(*letterPairs.toTypedArray())
+    }
 }
 
 internal fun obtuseSubmissions(): List<ScoreboardWord> {
@@ -212,8 +243,7 @@ internal fun obtuseSubmissions(): List<ScoreboardWord> {
 }
 
 internal fun swaggins(): TypesetterState {
-    var galleyIndex = 0;
-    val letterButtonStates = listOf(
+    return PreviewHelpers.typesetterState(
         's' to true,
         'w' to false,
         'a' to false,
@@ -225,19 +255,5 @@ internal fun swaggins(): TypesetterState {
         't' to false,
         'a' to false,
         'c' to false
-    ).map { (letter, isSlotted) ->
-        Slug.State(
-            letter.toLetter(), when (isSlotted) {
-                true -> galleyIndex++
-                false -> -1
-            }
-        )
-    }
-    return TypesetterState(
-        letterButtonStates
-            .filter { it.isSlotted() }
-            .map { it.letter }
-            .toWord(),
-        letterButtonStates
     )
 }

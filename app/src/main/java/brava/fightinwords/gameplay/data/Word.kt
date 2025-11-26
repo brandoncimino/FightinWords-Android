@@ -200,6 +200,20 @@ sealed interface Word : Comparable<Word> {
                 a[letterIndex].compareTo(b[letterIndex])
             }
         }
+
+        /**
+         * @return An immutable [List] of my [Letter]s.
+         */
+        fun Word.asList(): List<Letter> {
+            return object : AbstractList<Letter>() {
+                override val size: Int
+                    get() = length
+
+                override fun get(index: Int): Letter {
+                    return this@asList[index]
+                }
+            }
+        }
     }
 
     override fun compareTo(other: Word): Int {

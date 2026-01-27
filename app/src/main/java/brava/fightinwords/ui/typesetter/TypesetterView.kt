@@ -12,7 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
+import androidx.compose.ui.unit.sp
+import brava.fightinwords.gameplay.Slug
+import brava.fightinwords.gameplay.data.Letter.Companion.toLetter
+import brava.fightinwords.gameplay.data.Word.Companion.toWord
 import brava.fightinwords.ui.UiSettings
 import brava.fightinwords.ui.UiSettingsPreviewProvider
 
@@ -22,6 +29,12 @@ fun TypesetterView(
     uiSettings: UiSettings,
     typesetterState: TypesetterState,
     typesetterButtons: TypesetterButtons,
+    /**
+     * 📎 This is abstracted into a lambda to make it easier to swap in [TypesetterButtonsMenu] when that is ready.
+     */
+    typesetterButtonsView: @Composable (TypesetterButtons) -> Unit = {
+        TypesetterButtonsView(it)
+    },
 ) {
     BoxWithConstraints(modifier = modifier) {
         val actualPersonalSpace: Dp
@@ -48,10 +61,7 @@ fun TypesetterView(
                 onLetterButtonClick = typesetterButtons.onLetterButtonClick
             )
 
-            TypesetterButtonsView(
-                typesetterButtons.onSortButtonClick,
-                typesetterButtons.onSubmit
-            )
+            typesetterButtonsView(typesetterButtons)
         }
     }
 }
@@ -62,26 +72,45 @@ fun TypesetterView(
 fun TypesetterViewPreview(
     @PreviewParameter(UiSettingsPreviewProvider::class) uiSettings: UiSettings
 ) {
-
+    TypesetterView(
+        uiSettings = uiSettings,
+        typesetterState = TypesetterState(
+            "yolo".toWord(),
+            "woolly".mapIndexed { i, c ->
+                Slug.State(
+                    c.toLetter(),
+                    i
+                )
+            }),
+        typesetterButtons = TypesetterButtons({}, {}, {}, {})
+    )
 }
 
 @Composable
 fun TypesetterButtonsView(
-    onSortButtonClick: (SortButton) -> Unit,
-    onSubmit: () -> Unit,
+    typesetterButtons: TypesetterButtons,
+    modifier: Modifier = Modifier,
     fontSize: TextUnit = 30.sp,
-    modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = CenterHorizontally,
     ) {
-        SubmitButton(fontSize, onSubmit, modifier)
+        SubmitButton(
+            fontSize = fontSize,
+            onSubmit = typesetterButtons.onSubmit,
+            modifier = modifier
+        )
 
         Row(
             horizontalArrangement = Arrangement.Center,
         ) {
             SortButton.entries.forEach {
-                SortButton(it, onSortButtonClick, modifier, fontSize)
+                SortButton(
+                    it,
+                    onSortButtonClick = typesetterButtons.onSortButtonClick,
+                    modifier = modifier,
+                    fontSize = fontSize
+                )
             }
         }
     }
